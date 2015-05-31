@@ -39,9 +39,13 @@
 #include <unistd.h>
 #include <errno.h>
 #include <pspctrl.h>
+#include <SDL/SDL.h>
+#include <SDL/SDL_ttf.h>
 
 #include "psplog.h"
 #include "drone.h"
+#include "menu.h"
+#include "color.h"
 
 #define DRONE_IP "192.168.42.1"
 #define DRONE_DISCOVERY_PORT 44444
@@ -52,12 +56,17 @@ PSP_MODULE_INFO("PSP Drone Control", PSP_MODULE_USER, 0, 1);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
 PSP_HEAP_SIZE_MAX();
 
+enum
+{
+	MAIN_MENU_CONNECT = 0,
+	MAIN_MENU_EXIT
+};
+
 static int running = 1;
 
 unsigned int __attribute__((aligned(16))) list[128];
 
-
-static int on_exit(int arg1, int arg2, void *common)
+static int on_app_exit(int arg1, int arg2, void *common)
 {
 	running = 0;
 	return 0;
@@ -67,7 +76,8 @@ int callback_thread(SceSize args, void *argp)
 {
 	int callback_id;
 
-	callback_id = sceKernelCreateCallback("Exit Callback", on_exit, NULL);
+	callback_id = sceKernelCreateCallback("Exit Callback", on_app_exit,
+			NULL);
 	sceKernelRegisterExitCallback(callback_id);
 
 	sceKernelSleepThreadCB();
@@ -87,6 +97,7 @@ int setup_callback()
 
 	return thread_id;
 }
+
 
 static int network_init()
 {
@@ -148,13 +159,13 @@ static int network_dialog()
 	while (running) {
 		int done = 0;
 
+		/* directly use GU to avoid flickering with SDL */
 		sceGuStart(GU_DIRECT, list);
 		sceGuClearColor(0xff554433);
 		sceGuClearDepth(0);
 		sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
 		sceGuFinish();
 		sceGuSync(0,0);
-
 
 		switch (sceUtilityNetconfGetStatus()) {
 			case PSP_UTILITY_DIALOG_NONE:
@@ -186,42 +197,51 @@ static int network_dialog()
 	return 0;
 }
 
-/* Stride in fact ? */
-#define BUF_WIDTH (512)
-#define SCREEN_WIDTH (480)
-#define SCREEN_HEIGHT (272)
-#define BYTE_PER_PIXEL (4)
-#define FRAMESIZE (BUF_WIDTH * SCREEN_HEIGHT * BYTE_PER_PIXEL)
-
-static int gu_init()
+static int
+main_menu_run(SDL_Surface * screen, TTF_Font *font)
 {
-	void *draw_buffer = 0x0;
-	void *disp_buffer = draw_buffer + FRAMESIZE;
-	void *depth_buffer = disp_buffer + FRAMESIZE;
+	Menu *main_menu;
+	SDL_Surface *surface;
+	SDL_Rect position;
+	int selected_id = -1;
 
-	sceGuInit();
+	main_menu = menu_new(font, "Main menu");
+	menu_add_entry(main_menu, MAIN_MENU_CONNECT, "Connect to drone");
+	menu_add_entry(main_menu, MAIN_MENU_EXIT, "Exit");
 
-	sceGuStart(GU_DIRECT, list);
-	sceGuDrawBuffer(GU_PSM_8888, draw_buffer, BUF_WIDTH);
-	sceGuDispBuffer(SCREEN_WIDTH , SCREEN_HEIGHT, disp_buffer, BUF_WIDTH);
-	sceGuDepthBuffer(depth_buffer, BUF_WIDTH);
-	sceGuOffset(2048 - (SCREEN_WIDTH / 2), 2048 - (SCREEN_HEIGHT/2));
-	sceGuViewport(2048, 2048, SCREEN_WIDTH, SCREEN_HEIGHT);
-	sceGuDepthRange(0xc350,0x2710);
-	sceGuScissor(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
-	sceGuEnable(GU_SCISSOR_TEST);
-	sceGuDepthFunc(GU_GEQUAL);
-	sceGuEnable(GU_DEPTH_TEST);
-	sceGuFrontFace(GU_CW);
-	sceGuShadeModel(GU_SMOOTH);
-	sceGuEnable(GU_CULL_FACE);
-	sceGuEnable(GU_CLIP_PLANES);
-	sceGuFinish();
-	sceGuSync(0,0);
+	/* center position in screen */
+	position.x = (screen->w - menu_get_width(main_menu)) / 2;
+	position.y = (screen->h - menu_get_height(main_menu)) / 2;
 
-	sceGuDisplay(GU_TRUE);
-	sceDisplayWaitVblankStart();
-	return 0;
+	while (running) {
+		SceCtrlLatch latch;
+
+		surface = menu_render(main_menu);
+		SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
+		SDL_BlitSurface(surface, NULL, screen, &position);
+		SDL_FreeSurface(surface);
+
+		sceDisplayWaitVblankStart();
+		SDL_Flip(screen);
+
+		sceCtrlReadLatch(&latch);
+		if ((latch.uiPress & PSP_CTRL_UP) &&
+				(latch.uiMake & PSP_CTRL_UP))
+			menu_select_prev_entry(main_menu);
+
+		if ((latch.uiPress & PSP_CTRL_DOWN) &&
+				(latch.uiMake & PSP_CTRL_DOWN))
+			menu_select_next_entry(main_menu);
+
+		if ((latch.uiPress & PSP_CTRL_CROSS) &&
+				(latch.uiMake & PSP_CTRL_CROSS)) {
+			selected_id = menu_get_selected_id(main_menu);
+			break;
+		}
+	}
+
+	menu_free(main_menu);
+	return selected_id;
 }
 
 int main(int argc, char *argv[])
@@ -232,6 +252,7 @@ int main(int argc, char *argv[])
 	union SceNetApctlInfo gateway;
 	union SceNetApctlInfo ip;
 	int is_flying = 0;
+	SDL_Surface *screen;
 
 	if (psplog_init("ms0:/PSP/GAME/pspdc/log") < 0)
 		sceKernelExitGame();
@@ -247,7 +268,43 @@ int main(int argc, char *argv[])
 
 	setup_callback();
 
-	gu_init();
+	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+		PSPLOG_ERROR("failed to initialize SDL");
+		goto done;
+	}
+
+	if (TTF_Init() < 0) {
+		PSPLOG_ERROR("failed to initialize TTF");
+		SDL_Quit();
+		goto done;
+	}
+
+	screen = SDL_SetVideoMode(480, 272, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
+	if (screen == NULL) {
+		PSPLOG_ERROR("failed to set screen video mode");
+		TTF_Quit();
+		SDL_Quit();
+		goto done;
+	}
+
+	SDL_ShowCursor(SDL_DISABLE);
+
+	TTF_Font *font;
+	font = TTF_OpenFont("DejaVuSans.ttf", 16);
+	if (font == NULL) {
+		PSPLOG_ERROR("failed to log font");
+		goto done;
+	}
+
+	int selected_id;
+	selected_id = main_menu_run(screen, font);
+	switch (selected_id) {
+		case MAIN_MENU_CONNECT:
+			break;
+		case MAIN_MENU_EXIT:
+		default:
+			goto done;
+	}
 
 	PSPLOG_DEBUG("Opening network connection dialog");
 	network_dialog();
@@ -332,8 +389,11 @@ int main(int argc, char *argv[])
 
 	drone_deinit (&drone);
 
-	network_deinit();
+	TTF_CloseFont(font);
+	TTF_Quit();
+	SDL_Quit();
 done:
+	network_deinit();
 	psplog_deinit();
 
 	sceKernelExitGame();
