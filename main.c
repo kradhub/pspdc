@@ -254,7 +254,7 @@ int main(int argc, char *argv[])
 	int is_flying = 0;
 	SDL_Surface *screen;
 
-	if (psplog_init("ms0:/PSP/GAME/pspdc/log") < 0)
+	if (psplog_init(PSPLOG_CAT_INFO, "ms0:/PSP/GAME/pspdc/log") < 0)
 		sceKernelExitGame();
 
 	PSPLOG_INFO("PSP Drone Control");

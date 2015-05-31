@@ -47,9 +47,10 @@ enum psplog_category {
 /**
  * Init psplog context
  *
+ * @level : max level to log
  * @path : path to log file. It could be NULL, in this case log output on screen
  */
-int psplog_init(const char *path);
+int psplog_init(enum psplog_category level, const char *path);
 
 void psplog_deinit();
 

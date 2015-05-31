@@ -46,6 +46,7 @@ enum psplog_output {
 	PSPLOG_OUTPUT_FILE,
 };
 
+static enum psplog_category level_threshold;
 static enum psplog_output output;
 static SceUID psplog_semaphore = 0;
 static SceUID psplog_fd = -1;
@@ -65,7 +66,7 @@ static const char * psplog_category_get_name(enum psplog_category cat)
 		return "?????";
 }
 
-int psplog_init(const char *path)
+int psplog_init(enum psplog_category level, const char *path)
 {
 	output = path ? PSPLOG_OUTPUT_FILE : PSPLOG_OUTPUT_SCREEN;
 
@@ -81,6 +82,8 @@ int psplog_init(const char *path)
 
 	psplog_semaphore = sceKernelCreateSema("psplog_semaphore", 0, 1, 1,
 			NULL);
+
+	level_threshold = level;
 
 	return 0;
 }
@@ -159,6 +162,9 @@ void psplog_print(enum psplog_category cat, const char * fmt, ...)
 	char buf[BUFFER_LEN] = { 0, };
 	int size;
 	SceUInt timeout_us = 10000;
+
+	if (cat > level_threshold)
+		return;
 
 	if(sceKernelWaitSema(psplog_semaphore, 1, &timeout_us) < 0)
 		goto timeout;
