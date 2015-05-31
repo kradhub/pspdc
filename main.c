@@ -244,6 +244,49 @@ main_menu_run(SDL_Surface * screen, TTF_Font *font)
 	return selected_id;
 }
 
+int init_subsystem()
+{
+	PSPLOG_DEBUG("loading net module");
+	sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
+	sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
+
+	PSPLOG_DEBUG("initializing network stack");
+	if (network_init() < 0)
+		goto network_init_failed;
+
+	PSPLOG_DEBUG("initializing SDL");
+	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+		goto sdl_init_failed;
+
+	PSPLOG_DEBUG("initializing SDL_ttf");
+	if (TTF_Init() < 0)
+		goto ttf_init_failed;
+
+	return 0;
+
+network_init_failed:
+	PSPLOG_ERROR("failed to initialize network");
+	return -1;
+
+sdl_init_failed:
+	PSPLOG_ERROR("failed to initialize SDL");
+	network_deinit();
+	return -1;
+
+ttf_init_failed:
+	PSPLOG_ERROR("failed to initialize SDL_ttf");
+	SDL_Quit();
+	network_deinit();
+	return -1;
+}
+
+void deinit_subsystem()
+{
+	TTF_Quit();
+	SDL_Quit();
+	network_deinit();
+}
+
 int main(int argc, char *argv[])
 {
 	struct drone drone;
@@ -253,47 +296,28 @@ int main(int argc, char *argv[])
 	union SceNetApctlInfo ip;
 	int is_flying = 0;
 	SDL_Surface *screen;
+	TTF_Font *font;
+
+	setup_callback();
 
 	if (psplog_init(PSPLOG_CAT_INFO, "ms0:/PSP/GAME/pspdc/log") < 0)
 		sceKernelExitGame();
 
-	PSPLOG_INFO("PSP Drone Control");
-	PSPLOG_DEBUG("Initializing components");
-
-	sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
-	sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
-
-	if (network_init() < 0)
-		sceKernelExitGame();
-
-	setup_callback();
-
-	if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-		PSPLOG_ERROR("failed to initialize SDL");
-		goto done;
-	}
-
-	if (TTF_Init() < 0) {
-		PSPLOG_ERROR("failed to initialize TTF");
-		SDL_Quit();
-		goto done;
-	}
+	if (init_subsystem() < 0)
+		goto end;
 
 	screen = SDL_SetVideoMode(480, 272, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (screen == NULL) {
 		PSPLOG_ERROR("failed to set screen video mode");
-		TTF_Quit();
-		SDL_Quit();
-		goto done;
+		goto end;
 	}
 
 	SDL_ShowCursor(SDL_DISABLE);
 
-	TTF_Font *font;
 	font = TTF_OpenFont("DejaVuSans.ttf", 16);
 	if (font == NULL) {
 		PSPLOG_ERROR("failed to log font");
-		goto done;
+		goto end;
 	}
 
 	int selected_id;
@@ -303,7 +327,7 @@ int main(int argc, char *argv[])
 			break;
 		case MAIN_MENU_EXIT:
 		default:
-			goto done;
+			goto end;
 	}
 
 	PSPLOG_DEBUG("Opening network connection dialog");
@@ -389,13 +413,12 @@ int main(int argc, char *argv[])
 
 	drone_deinit (&drone);
 
-	TTF_CloseFont(font);
-	TTF_Quit();
-	SDL_Quit();
-done:
-	network_deinit();
-	psplog_deinit();
+end:
+	if (font)
+		TTF_CloseFont(font);
 
+	deinit_subsystem();
+	psplog_deinit();
 	sceKernelExitGame();
 	return 0;
 }
