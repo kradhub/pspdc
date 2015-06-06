@@ -51,6 +51,7 @@ int ui_init(UI * ui, int width, int height);
 void ui_deinit(UI * ui);
 
 int ui_main_menu_run(UI * ui);
+int ui_network_dialog_run(UI * ui);
 int ui_flight_run(UI * ui, Drone * drone);
 
 #endif

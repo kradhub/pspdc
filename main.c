@@ -31,8 +31,7 @@
 #include <pspnet.h>
 #include <pspnet_inet.h>
 #include <pspnet_apctl.h>
-#include <psputility_netconf.h>
-#include <pspgu.h>
+#include <psputility_netmodules.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <arpa/inet.h>
@@ -56,8 +55,6 @@ PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
 PSP_HEAP_SIZE_MAX();
 
 int running = 1;
-
-unsigned int __attribute__((aligned(16))) list[4096];
 
 static int on_app_exit(int arg1, int arg2, void *common)
 {
@@ -124,82 +121,6 @@ static void network_deinit()
 	sceNetApctlTerm();
 	sceNetInetTerm();
 	sceNetTerm();
-}
-
-/* configuration dialog return 0 when connected
- * 1 when cancelled (ie back)
- */
-static int network_dialog()
-{
-	pspUtilityNetconfData conf;
-	struct pspUtilityNetconfAdhoc adhoc_params;
-	unsigned int swap_count = 0;
-
-	memset(&conf, 0, sizeof(conf));
-	memset(&adhoc_params, 0, sizeof(adhoc_params));
-
-	conf.base.size = sizeof(conf);
-	conf.base.language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
-	conf.base.buttonSwap = PSP_UTILITY_ACCEPT_CROSS;
-
-	/* Thread priorities */
-	conf.base.graphicsThread = 17;
-	conf.base.accessThread = 19;
-	conf.base.fontThread = 18;
-	conf.base.soundThread = 16;
-
-	conf.action = PSP_NETCONF_ACTION_CONNECTAP;
-	conf.adhocparam = &adhoc_params;
-
-	sceUtilityNetconfInitStart (&conf);
-
-	while (running) {
-		int done = 0;
-
-		/* directly use GU to avoid flickering with SDL */
-		sceGuStart(GU_DIRECT, list);
-		sceGuClearColor(0xff554433);
-		sceGuClearDepth(0);
-		sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
-		sceGuFinish();
-		sceGuSync(0,0);
-
-		switch (sceUtilityNetconfGetStatus()) {
-			case PSP_UTILITY_DIALOG_NONE:
-				break;
-
-			case PSP_UTILITY_DIALOG_VISIBLE:
-				sceUtilityNetconfUpdate(1);
-				break;
-
-			case PSP_UTILITY_DIALOG_QUIT:
-				sceUtilityNetconfShutdownStart();
-				break;
-
-			case PSP_UTILITY_DIALOG_FINISHED:
-				done = 1;
-				break;
-
-			default:
-				break;
-		}
-
-		sceDisplayWaitVblankStart();
-		sceGuSwapBuffers();
-		swap_count++;
-
-		if (done)
-			break;
-	}
-
-	/* hack for SDL compatibility.
-	 * if it end up on an odd buffer, SDL won't be displayed.
-	 * ie SDL will display in an hidden buffer
-	 */
-	if (swap_count & 1)
-		sceGuSwapBuffers();
-
-	return conf.base.result;
 }
 
 int init_subsystem()
@@ -275,7 +196,7 @@ main_menu:
 	}
 
 	PSPLOG_DEBUG("Opening network connection dialog");
-	if (network_dialog())
+	if (ui_network_dialog_run(&ui))
 		goto main_menu;
 
 	sceNetApctlGetInfo(PSP_NET_APCTL_INFO_SSID, &ssid);
