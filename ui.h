@@ -31,6 +31,8 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 
+#include "drone.h"
+
 enum
 {
 	MAIN_MENU_CONNECT = 0,
@@ -49,5 +51,6 @@ int ui_init(UI * ui, int width, int height);
 void ui_deinit(UI * ui);
 
 int ui_main_menu_run(UI * ui);
+int ui_flight_run(UI * ui, Drone * drone);
 
 #endif

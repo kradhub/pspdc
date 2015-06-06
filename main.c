@@ -296,64 +296,7 @@ main_menu:
 		PSPLOG_ERROR ("failed to initialize drone");
 	}
 
-	while (running) {
-		SceCtrlData pad;
-		SceCtrlLatch latch;
-		int yaw = 0;
-		int pitch = 0;
-		int roll = 0;
-		int gaz = 0;
-
-		sceCtrlReadBufferPositive (&pad, 1);
-		sceCtrlReadLatch(&latch);
-
-		/* Check triangle and circle transition */
-		if ((latch.uiPress & PSP_CTRL_TRIANGLE) &&
-				(latch.uiMake & PSP_CTRL_TRIANGLE)) {
-			if (is_flying)
-				drone_landing (&drone);
-			else
-				drone_takeoff (&drone);
-
-			is_flying = !is_flying;
-		}
-
-		if ((latch.uiPress & PSP_CTRL_CIRCLE) &&
-				(latch.uiMake & PSP_CTRL_CIRCLE)) {
-			drone_emergency (&drone);
-			is_flying = 0;
-		}
-
-		if ((latch.uiPress & PSP_CTRL_SELECT) &&
-				(latch.uiMake & PSP_CTRL_SELECT))
-			drone_flat_trim (&drone);
-
-		/* Send flight control */
-		if (pad.Buttons != 0) {
-			if (pad.Buttons & PSP_CTRL_CROSS)
-				gaz += 50;
-			if (pad.Buttons & PSP_CTRL_SQUARE)
-				gaz -= 50;
-
-			if (pad.Buttons & PSP_CTRL_LTRIGGER)
-				yaw -= 50;
-			if (pad.Buttons & PSP_CTRL_RTRIGGER)
-				yaw += 50;
-
-			if (pad.Buttons & PSP_CTRL_UP)
-				pitch += 50;
-			if (pad.Buttons & PSP_CTRL_DOWN)
-				pitch -= 50;
-
-			if (pad.Buttons & PSP_CTRL_LEFT)
-				roll -= 50;
-			if (pad.Buttons & PSP_CTRL_RIGHT)
-				roll += 50;
-		}
-		drone_flight_control (&drone, gaz, yaw, pitch, roll);
-
-//		sceKernelDelayThread (10 * 1000);
-	}
+	ui_flight_run(&ui, &drone);
 
 	drone_deinit (&drone);
 
