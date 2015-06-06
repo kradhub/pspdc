@@ -247,7 +247,7 @@ void deinit_subsystem()
 
 int main(int argc, char *argv[])
 {
-	struct drone drone;
+	Drone drone;
 	int ret;
 	union SceNetApctlInfo ssid;
 	union SceNetApctlInfo gateway;

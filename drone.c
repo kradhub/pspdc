@@ -127,7 +127,7 @@ ar_network_command_cb (int buffer_id, uint8_t * data, void * userdata,
 static void *
 drone_navdata_buffer_thread (void * userdata)
 {
-	struct drone *drone = (struct drone *) userdata;
+	Drone *drone = (Drone *) userdata;
 	uint8_t *buf;
 	const size_t bufsize = 128 * 1024;
 
@@ -171,7 +171,7 @@ drone_navdata_buffer_thread (void * userdata)
 static void *
 drone_event_buffer_thread (void * userdata)
 {
-	struct drone *drone = (struct drone *) userdata;
+	Drone *drone = (Drone *) userdata;
 	uint8_t *buf;
 	const size_t bufsize = 128 * 1024;
 
@@ -215,7 +215,7 @@ drone_event_buffer_thread (void * userdata)
 static eARDISCOVERY_ERROR
 _on_send_json (uint8_t *data, uint32_t *size, void * userdata)
 {
-	struct drone *drone = (struct drone *) userdata;
+	Drone *drone = (Drone *) userdata;
 
 	if (data == NULL || size == NULL || userdata == NULL)
 		return ARDISCOVERY_ERROR;
@@ -237,7 +237,7 @@ _on_send_json (uint8_t *data, uint32_t *size, void * userdata)
 static eARDISCOVERY_ERROR
 _on_receive_json (uint8_t *data, uint32_t size, char * ipv4, void * userdata)
 {
-	struct drone *drone = (struct drone *) userdata;
+	Drone *drone = (Drone *) userdata;
 
 	if (data == NULL || size == 0 || userdata == NULL)
 		return ARDISCOVERY_ERROR;
@@ -250,7 +250,7 @@ _on_receive_json (uint8_t *data, uint32_t size, char * ipv4, void * userdata)
 
 
 static int
-drone_discover (struct drone * drone)
+drone_discover (Drone * drone)
 {
 	eARDISCOVERY_ERROR err = ARDISCOVERY_OK;
 	ARDISCOVERY_Connection_ConnectionData_t *discovery_data;
@@ -294,7 +294,7 @@ _on_network_disconnected (ARNETWORK_Manager_t * net,
 }
 
 static int
-drone_connect (struct drone * drone)
+drone_connect (Drone * drone)
 {
 	int ret;
 	eARNETWORKAL_ERROR al_error;
@@ -357,7 +357,7 @@ create_thread_failed:
 }
 
 static int
-drone_disconnect (struct drone * drone)
+drone_disconnect (Drone * drone)
 {
 	PSPLOG_INFO ("disconnecting from drone %s", drone->ipv4_addr);
 
@@ -395,8 +395,8 @@ drone_disconnect (struct drone * drone)
 
 /* Drone API */
 int
-drone_init(struct drone * drone, char * ipv4, int discovery_port,
-		int c2d_port, int d2c_port)
+drone_init(Drone * drone, char * ipv4, int discovery_port, int c2d_port,
+		int d2c_port)
 {
 	int ret;
 	eARNETWORKAL_ERROR net_al_error = ARNETWORKAL_OK;
@@ -474,7 +474,7 @@ cleanup:
 }
 
 void
-drone_deinit (struct drone * drone)
+drone_deinit (Drone * drone)
 {
 	PSPLOG_INFO ("deinitializing drone");
 	drone->running = 0;
@@ -505,7 +505,7 @@ drone_deinit (struct drone * drone)
 		free (drone->ipv4_addr);
 }
 
-int drone_flat_trim (struct drone * drone)
+int drone_flat_trim (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
@@ -525,7 +525,7 @@ int drone_flat_trim (struct drone * drone)
 	return 0;
 }
 
-int drone_emergency(struct drone * drone)
+int drone_emergency(Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
@@ -546,7 +546,7 @@ int drone_emergency(struct drone * drone)
 }
 
 int
-drone_takeoff(struct drone * drone)
+drone_takeoff(Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
@@ -567,7 +567,7 @@ drone_takeoff(struct drone * drone)
 }
 
 int
-drone_landing (struct drone * drone)
+drone_landing (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
@@ -588,8 +588,7 @@ drone_landing (struct drone * drone)
 }
 
 int
-drone_flight_control (struct drone * drone, int gaz, int yaw, int pitch,
-		int roll)
+drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];

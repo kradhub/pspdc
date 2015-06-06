@@ -32,7 +32,9 @@
 #include <libARNetworkAL/ARNetworkAL.h>
 #include <libARNetwork/ARNetwork.h>
 
-struct drone
+typedef struct _drone Drone;
+
+struct _drone
 {
 	char *ipv4_addr;
 	int discovery_port;
@@ -49,18 +51,20 @@ struct drone
 	ARSAL_Thread_t navdata_thread;
 
 	int running;
+
+	/* drone state */
+	unsigned int battery;
 };
 
-int drone_init (struct drone * drone, char * ipv4, int discovery_port,
-		int c2d_port, int d2c_port);
-void drone_deinit (struct drone * drone);
+int drone_init (Drone * drone, char * ipv4, int discovery_port, int c2d_port,
+		int d2c_port);
+void drone_deinit (Drone * drone);
 
-int drone_emergency (struct drone * drone);
-int drone_takeoff (struct drone * drone);
-int drone_landing (struct drone * drone);
+int drone_emergency (Drone * drone);
+int drone_takeoff (Drone * drone);
+int drone_landing (Drone * drone);
 
 /* piloting commands */
-int drone_flight_control (struct drone * drone, int gaz, int yaw, int pitch,
-		int roll);
+int drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll);
 
 #endif
