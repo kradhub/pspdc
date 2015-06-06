@@ -133,6 +133,9 @@ static void network_deinit()
 	sceNetTerm();
 }
 
+/* configuration dialog return 0 when connected
+ * 1 when cancelled (ie back)
+ */
 static int network_dialog()
 {
 	pspUtilityNetconfData conf;
@@ -194,7 +197,7 @@ static int network_dialog()
 			break;
 	}
 
-	return 0;
+	return conf.base.result;
 }
 
 static int
@@ -297,6 +300,7 @@ int main(int argc, char *argv[])
 	int is_flying = 0;
 	SDL_Surface *screen;
 	TTF_Font *font;
+	int selected_id;
 
 	setup_callback();
 
@@ -320,7 +324,7 @@ int main(int argc, char *argv[])
 		goto end;
 	}
 
-	int selected_id;
+main_menu:
 	selected_id = main_menu_run(screen, font);
 	switch (selected_id) {
 		case MAIN_MENU_CONNECT:
@@ -331,7 +335,8 @@ int main(int argc, char *argv[])
 	}
 
 	PSPLOG_DEBUG("Opening network connection dialog");
-	network_dialog();
+	if (network_dialog())
+		goto main_menu;
 
 	sceNetApctlGetInfo(PSP_NET_APCTL_INFO_SSID, &ssid);
 	sceNetApctlGetInfo(PSP_NET_APCTL_INFO_GATEWAY, &gateway);
