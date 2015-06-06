@@ -161,13 +161,12 @@ void psplog_print(enum psplog_category cat, const char * fmt, ...)
 	va_list ap;
 	char buf[BUFFER_LEN] = { 0, };
 	int size;
-	SceUInt timeout_us = 10000;
 
 	if (cat > level_threshold)
 		return;
 
-	if(sceKernelWaitSema(psplog_semaphore, 1, &timeout_us) < 0)
-		goto timeout;
+	if(sceKernelWaitSema(psplog_semaphore, 1, NULL) < 0)
+		goto done;
 
 	va_start(ap, fmt);
 	size = psplog_format(buf, BUFFER_LEN, cat, fmt, ap);
@@ -181,6 +180,6 @@ void psplog_print(enum psplog_category cat, const char * fmt, ...)
 
 	sceKernelSignalSema(psplog_semaphore, 1);
 
-timeout:
+done:
 	return;
 }
