@@ -565,7 +565,7 @@ int drone_flat_trim (Drone * drone)
 		return -1;
 	}
 
-	PSPLOG_INFO ("send flat trim");
+	PSPLOG_DEBUG("send flat trim");
 	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
@@ -585,7 +585,7 @@ int drone_emergency(Drone * drone)
 		return -1;
 	}
 
-	PSPLOG_INFO("send emergency");
+	PSPLOG_DEBUG("send emergency");
 	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_EMERGENCY_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
@@ -606,7 +606,7 @@ drone_takeoff(Drone * drone)
 		return -1;
 	}
 
-	PSPLOG_INFO("send takeoff");
+	PSPLOG_DEBUG("send takeoff");
 	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
@@ -627,7 +627,7 @@ drone_landing (Drone * drone)
 		return -1;
 	}
 
-	PSPLOG_INFO("send landing");
+	PSPLOG_DEBUG("send landing");
 	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
@@ -649,7 +649,7 @@ drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll)
 		return -1;
 	}
 
-	PSPLOG_INFO("send flight control parameters");
+	PSPLOG_DEBUG("send flight control parameters");
 	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_NO_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
