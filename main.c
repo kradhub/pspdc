@@ -185,6 +185,9 @@ int main(int argc, char *argv[])
 	if (ui_init(&ui, 480, 272) < 0)
 		goto end;
 
+	if (drone_init(&drone) < 0)
+		goto end;
+
 main_menu:
 	switch (ui_main_menu_run(&ui)) {
 		case MAIN_MENU_CONNECT:
@@ -205,19 +208,15 @@ main_menu:
 	PSPLOG_INFO("connected to %s (%s)", ssid.ssid, gateway.gateway);
 	PSPLOG_INFO("get ip: %s", ip.ip);
 
-	/* initialize and connect to drone */
-	PSPLOG_INFO ("initializing drone");
-	ret = drone_init (&drone, DRONE_IP, DRONE_DISCOVERY_PORT,
+	drone_connect(&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
 			DRONE_C2D_PORT, DRONE_D2C_PORT);
-	if (ret < 0) {
-		PSPLOG_ERROR ("failed to initialize drone");
-	}
 
 	ui_flight_run(&ui, &drone);
 
-	drone_deinit (&drone);
+	drone_disconnect(&drone);
 
 end:
+	drone_deinit(&drone);
 	ui_deinit(&ui);
 	deinit_subsystem();
 	psplog_deinit();

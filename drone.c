@@ -333,14 +333,56 @@ _on_network_disconnected (ARNETWORK_Manager_t * net,
 	PSPLOG_INFO ("on_network_disconnected called");
 }
 
-static int
-drone_connect (Drone * drone)
+/* Drone API */
+int
+drone_init(Drone * drone)
+{
+	eARNETWORKAL_ERROR net_al_error = ARNETWORKAL_OK;
+	memset (drone, 0, sizeof (*drone));
+
+	drone->net_al = ARNETWORKAL_Manager_New (&net_al_error);
+	if (net_al_error != ARNETWORKAL_OK) {
+		PSPLOG_ERROR ("failed to create networl al manager");
+		return -1;
+	}
+
+	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
+			on_battery_status_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingStateFlyingStateChangedCallback (
+			on_flying_state_changed, drone);
+
+	return 0;
+}
+
+void
+drone_deinit (Drone * drone)
+{
+	PSPLOG_INFO ("deinitializing drone");
+
+	if (drone->net_al) {
+		PSPLOG_DEBUG ("deleting network al");
+		ARNETWORKAL_Manager_Delete (&drone->net_al);
+		drone->net_al = NULL;
+	}
+}
+
+int
+drone_connect(Drone * drone, const char * ipv4, int discovery_port,
+		int c2d_port, int d2c_port)
 {
 	int ret;
 	eARNETWORKAL_ERROR al_error;
 	eARNETWORK_ERROR error;
 
+	drone->ipv4_addr = strdup (ipv4);
+	drone->discovery_port = discovery_port;
+	drone->c2d_port = c2d_port;
+	drone->d2c_port = d2c_port;
+
 	PSPLOG_INFO ("connecting to drone %s", drone->ipv4_addr);
+
+	if (drone_discover(drone) < 0)
+		goto no_drone;
 
 	al_error = ARNETWORKAL_Manager_InitWifiNetwork (drone->net_al,
 			drone->ipv4_addr, drone->c2d_port, drone->d2c_port,
@@ -369,9 +411,27 @@ drone_connect (Drone * drone)
 	if (ret < 0)
 		goto create_thread_failed;
 
+	/* create and start event and navdata threads */
+	drone->running = 1;
+	PSPLOG_DEBUG ("creating event thread");
+	ret = ARSAL_Thread_Create (&drone->event_thread,
+			drone_event_buffer_thread, drone);
+	if (ret < 0)
+		goto create_thread_failed;
+
+	PSPLOG_DEBUG ("creating navdata thread");
+	ret = ARSAL_Thread_Create (&drone->navdata_thread,
+			drone_navdata_buffer_thread, drone);
+	if (ret < 0)
+		goto create_thread_failed;
+
 	PSPLOG_INFO ("connected to drone %s", drone->ipv4_addr);
 
 	return 0;
+
+no_drone:
+	PSPLOG_ERROR ("failed to discover a drone");
+	return -1;
 
 no_wlan:
 	PSPLOG_ERROR ("failed to initialize wifi network, reason: %s",
@@ -385,21 +445,56 @@ no_net:
 	return -1;
 
 create_thread_failed:
-	PSPLOG_ERROR ("failed to create a network thread");
+	PSPLOG_ERROR ("failed to create a network or event thread");
 	if (drone->rx_thread) {
 		ARSAL_Thread_Join (drone->rx_thread, NULL);
 		ARSAL_Thread_Destroy (&drone->rx_thread);
 		drone->rx_thread = NULL;
 	}
 
+	if (drone->tx_thread) {
+		ARSAL_Thread_Join (drone->tx_thread, NULL);
+		ARSAL_Thread_Destroy (&drone->tx_thread);
+		drone->tx_thread = NULL;
+	}
+
+	drone->running = 0;
+
+	if (drone->event_thread) {
+		ARSAL_Thread_Join (drone->event_thread, NULL);
+		ARSAL_Thread_Destroy (&drone->event_thread);
+		drone->event_thread = NULL;
+	}
+
+	if (drone->navdata_thread) {
+		ARSAL_Thread_Join (drone->navdata_thread, NULL);
+		ARSAL_Thread_Destroy (&drone->navdata_thread);
+		drone->navdata_thread = NULL;
+	}
+
 	ARNETWORKAL_Manager_CloseWifiNetwork (drone->net_al);
 	return -1;
 }
 
-static int
+int
 drone_disconnect (Drone * drone)
 {
 	PSPLOG_INFO ("disconnecting from drone %s", drone->ipv4_addr);
+	drone->running = 0;
+
+	if (drone->event_thread) {
+		PSPLOG_DEBUG ("stopping event thread");
+		ARSAL_Thread_Join (drone->event_thread, NULL);
+		ARSAL_Thread_Destroy (&drone->event_thread);
+		drone->event_thread = NULL;
+	}
+
+	if (drone->navdata_thread) {
+		PSPLOG_DEBUG ("stopping navdata thread");
+		ARSAL_Thread_Join (drone->navdata_thread, NULL);
+		ARSAL_Thread_Destroy (&drone->navdata_thread);
+		drone->navdata_thread = NULL;
+	}
 
 	if (drone->net) {
 		ARNETWORK_Manager_Stop (drone->net);
@@ -429,127 +524,12 @@ drone_disconnect (Drone * drone)
 		ARNETWORKAL_Manager_CloseWifiNetwork (drone->net_al);
 	}
 
-	return 0;
-}
-
-
-/* Drone API */
-int
-drone_init(Drone * drone, char * ipv4, int discovery_port, int c2d_port,
-		int d2c_port)
-{
-	int ret;
-	eARNETWORKAL_ERROR net_al_error = ARNETWORKAL_OK;
-
-	PSPLOG_INFO ("Initializing drone");
-
-	/* set some device params */
-	memset (drone, 0, sizeof (*drone));
-	drone->ipv4_addr = strdup (ipv4);
-	drone->discovery_port = discovery_port;
-	drone->d2c_port = d2c_port;
-	drone->c2d_port = c2d_port;
-	drone->running = 1;
-
-	drone->state = DRONE_STATE_LANDED;
-
-	drone->net_al = ARNETWORKAL_Manager_New (&net_al_error);
-	if (net_al_error != ARNETWORKAL_OK) {
-		PSPLOG_ERROR ("failed to create networl al manager");
-		goto cleanup;
-	}
-
-	ret = drone_discover (drone);
-	if (ret < 0) {
-		PSPLOG_ERROR ("failed to discover");
-		goto cleanup;
-	}
-
-	ret = drone_connect (drone);
-	if (ret < 0) {
-		PSPLOG_ERROR ("failed to connect to drone");
-		goto cleanup;
-	}
-
-	/* allocate reader thread array and data array */
-	ret = ARSAL_Thread_Create (&drone->event_thread,
-			drone_event_buffer_thread, drone);
-	if (ret < 0) {
-		PSPLOG_ERROR ("failed to create event thread");
-		goto cleanup;
-	}
-
-	ret = ARSAL_Thread_Create (&drone->navdata_thread,
-			drone_navdata_buffer_thread, drone);
-	if (ret < 0) {
-		PSPLOG_ERROR ("failed to create navdata thread");
-		goto cleanup;
-	}
-
-	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
-			on_battery_status_changed, drone);
-	ARCOMMANDS_Decoder_SetARDrone3PilotingStateFlyingStateChangedCallback (
-			on_flying_state_changed, drone);
-
-	PSPLOG_INFO ("drone initialized");
-
-	return 0;
-
-cleanup:
-	drone->running = 0;
-
-	if (drone->net_al)
-		ARNETWORKAL_Manager_Delete (&drone->net_al);
-
-	drone_disconnect (drone);
-
-	if (drone->event_thread) {
-		ARSAL_Thread_Join (drone->event_thread, NULL);
-		ARSAL_Thread_Destroy (&drone->event_thread);
-	}
-
-	if (drone->navdata_thread) {
-		ARSAL_Thread_Join (drone->navdata_thread, NULL);
-		ARSAL_Thread_Destroy (&drone->navdata_thread);
-	}
-
-	drone->net_al = NULL;
-	drone->event_thread = NULL;
-	drone->navdata_thread = NULL;
-
-	return -1;
-}
-
-void
-drone_deinit (Drone * drone)
-{
-	PSPLOG_INFO ("deinitializing drone");
-	drone->running = 0;
-
-	drone_disconnect (drone);
-
-	if (drone->event_thread) {
-		PSPLOG_DEBUG ("stopping event thread");
-		ARSAL_Thread_Join (drone->event_thread, NULL);
-		ARSAL_Thread_Destroy (&drone->event_thread);
-		drone->event_thread = NULL;
-	}
-		
-	if (drone->navdata_thread) {
-		PSPLOG_DEBUG ("stopping navdata thread");
-		ARSAL_Thread_Join (drone->navdata_thread, NULL);
-		ARSAL_Thread_Destroy (&drone->navdata_thread);
-		drone->navdata_thread = NULL;
-	}
-
-	if (drone->net_al) {
-		PSPLOG_DEBUG ("deleting network al");
-		ARNETWORKAL_Manager_Delete (&drone->net_al);
-		drone->net_al = NULL;
-	}
-
 	if (drone->ipv4_addr)
 		free (drone->ipv4_addr);
+
+	drone->ipv4_addr = NULL;
+
+	return 0;
 }
 
 int drone_flat_trim (Drone * drone)

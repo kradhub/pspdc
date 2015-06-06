@@ -65,9 +65,12 @@ struct _drone
 	unsigned int battery;
 };
 
-int drone_init (Drone * drone, char * ipv4, int discovery_port, int c2d_port,
-		int d2c_port);
+int drone_init (Drone * drone);
 void drone_deinit (Drone * drone);
+
+int drone_connect(Drone * drone, const char * ipv4, int discovery_port,
+		int c2d_port, int d2c_port);
+int drone_disconnect(Drone * drone);
 
 int drone_emergency (Drone * drone);
 int drone_takeoff (Drone * drone);
