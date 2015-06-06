@@ -73,6 +73,8 @@ int drone_emergency (Drone * drone);
 int drone_takeoff (Drone * drone);
 int drone_landing (Drone * drone);
 
+int drone_flat_trim (Drone * drone);
+
 /* piloting commands */
 int drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll);
 
