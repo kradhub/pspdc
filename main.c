@@ -44,8 +44,7 @@
 
 #include "psplog.h"
 #include "drone.h"
-#include "menu.h"
-#include "color.h"
+#include "ui.h"
 
 #define DRONE_IP "192.168.42.1"
 #define DRONE_DISCOVERY_PORT 44444
@@ -56,13 +55,7 @@ PSP_MODULE_INFO("PSP Drone Control", PSP_MODULE_USER, 0, 1);
 PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
 PSP_HEAP_SIZE_MAX();
 
-enum
-{
-	MAIN_MENU_CONNECT = 0,
-	MAIN_MENU_EXIT
-};
-
-static int running = 1;
+int running = 1;
 
 unsigned int __attribute__((aligned(16))) list[4096];
 
@@ -209,53 +202,6 @@ static int network_dialog()
 	return conf.base.result;
 }
 
-static int
-main_menu_run(SDL_Surface * screen, TTF_Font *font)
-{
-	Menu *main_menu;
-	SDL_Surface *surface;
-	SDL_Rect position;
-	int selected_id = -1;
-
-	main_menu = menu_new(font, "Main menu");
-	menu_add_entry(main_menu, MAIN_MENU_CONNECT, "Connect to drone");
-	menu_add_entry(main_menu, MAIN_MENU_EXIT, "Exit");
-
-	/* center position in screen */
-	position.x = (screen->w - menu_get_width(main_menu)) / 2;
-	position.y = (screen->h - menu_get_height(main_menu)) / 2;
-
-	while (running) {
-		SceCtrlLatch latch;
-
-		surface = menu_render(main_menu);
-		SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
-		SDL_BlitSurface(surface, NULL, screen, &position);
-		SDL_FreeSurface(surface);
-
-		sceDisplayWaitVblankStart();
-		SDL_Flip(screen);
-
-		sceCtrlReadLatch(&latch);
-		if ((latch.uiPress & PSP_CTRL_UP) &&
-				(latch.uiMake & PSP_CTRL_UP))
-			menu_select_prev_entry(main_menu);
-
-		if ((latch.uiPress & PSP_CTRL_DOWN) &&
-				(latch.uiMake & PSP_CTRL_DOWN))
-			menu_select_next_entry(main_menu);
-
-		if ((latch.uiPress & PSP_CTRL_CROSS) &&
-				(latch.uiMake & PSP_CTRL_CROSS)) {
-			selected_id = menu_get_selected_id(main_menu);
-			break;
-		}
-	}
-
-	menu_free(main_menu);
-	return selected_id;
-}
-
 int init_subsystem()
 {
 	PSPLOG_DEBUG("loading net module");
@@ -307,8 +253,7 @@ int main(int argc, char *argv[])
 	union SceNetApctlInfo gateway;
 	union SceNetApctlInfo ip;
 	int is_flying = 0;
-	SDL_Surface *screen;
-	TTF_Font *font;
+	UI ui;
 	int selected_id;
 
 	setup_callback();
@@ -319,22 +264,11 @@ int main(int argc, char *argv[])
 	if (init_subsystem() < 0)
 		goto end;
 
-	screen = SDL_SetVideoMode(480, 272, 32, SDL_HWSURFACE | SDL_DOUBLEBUF);
-	if (screen == NULL) {
-		PSPLOG_ERROR("failed to set screen video mode");
+	if (ui_init(&ui, 480, 272) < 0)
 		goto end;
-	}
-
-	SDL_ShowCursor(SDL_DISABLE);
-
-	font = TTF_OpenFont("DejaVuSans.ttf", 16);
-	if (font == NULL) {
-		PSPLOG_ERROR("failed to log font");
-		goto end;
-	}
 
 main_menu:
-	selected_id = main_menu_run(screen, font);
+	selected_id = ui_main_menu_run(&ui);
 	switch (selected_id) {
 		case MAIN_MENU_CONNECT:
 			break;
@@ -428,9 +362,7 @@ main_menu:
 	drone_deinit (&drone);
 
 end:
-	if (font)
-		TTF_CloseFont(font);
-
+	ui_deinit(&ui);
 	deinit_subsystem();
 	psplog_deinit();
 	sceKernelExitGame();

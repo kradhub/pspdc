@@ -2,7 +2,7 @@ PSPSDK=$(shell psp-config --pspsdk-path)
 PSPBIN = $(PSPSDK)/../bin
 
 TARGET = pspdc
-OBJS = main.o psplog.o drone.o menu.o color.o
+OBJS = main.o psplog.o drone.o menu.o color.o ui.o
 
 CFLAGS = -g -O2 -G0 -Wall -Wextra
 CXXFLAGS = -g -O2 -Wall -Wextra -fno-exceptions -fno-rtti
