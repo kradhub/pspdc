@@ -64,7 +64,7 @@ enum
 
 static int running = 1;
 
-unsigned int __attribute__((aligned(16))) list[128];
+unsigned int __attribute__((aligned(16))) list[4096];
 
 static int on_app_exit(int arg1, int arg2, void *common)
 {
@@ -140,6 +140,7 @@ static int network_dialog()
 {
 	pspUtilityNetconfData conf;
 	struct pspUtilityNetconfAdhoc adhoc_params;
+	unsigned int swap_count = 0;
 
 	memset(&conf, 0, sizeof(conf));
 	memset(&adhoc_params, 0, sizeof(adhoc_params));
@@ -192,10 +193,18 @@ static int network_dialog()
 
 		sceDisplayWaitVblankStart();
 		sceGuSwapBuffers();
+		swap_count++;
 
 		if (done)
 			break;
 	}
+
+	/* hack for SDL compatibility.
+	 * if it end up on an odd buffer, SDL won't be displayed.
+	 * ie SDL will display in an hidden buffer
+	 */
+	if (swap_count & 1)
+		sceGuSwapBuffers();
 
 	return conf.base.result;
 }
