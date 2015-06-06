@@ -35,5 +35,6 @@ extern const SDL_Color color_white;
 extern const SDL_Color color_red;
 extern const SDL_Color color_green;
 extern const SDL_Color color_blue;
+extern const SDL_Color color_yellow;
 
 #endif

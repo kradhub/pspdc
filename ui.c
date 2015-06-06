@@ -40,6 +40,135 @@ extern int running;
 
 unsigned int __attribute__((aligned(16))) list[4096];
 
+static int
+ui_flight_battery_update(UI * ui, unsigned int percent)
+{
+	SDL_Surface *text;
+	SDL_Rect position;
+	const SDL_Color *color;
+	char percent_str[5];
+
+	if (percent > 100)
+		return -1;
+
+	snprintf(percent_str, 5, "%u%%", percent);
+
+	/* select color according to value */
+	if (percent < 10)
+		color = &color_red;
+	else if (percent < 30)
+		color = &color_yellow;
+	else
+		color = &color_green;
+
+	text = TTF_RenderText_Blended(ui->font, percent_str, *color);
+	if (text == NULL)
+		goto no_text;
+
+	/* battery is draw on the top right of the screen */
+	position.x = ui->screen->w - text->w - 5;
+	position.y = 0;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	SDL_FreeSurface(text);
+
+	return 0;
+
+no_text:
+	PSPLOG_ERROR("failed to render text");
+	return -1;
+
+blit_failed:
+	PSPLOG_ERROR("failed to blit text to screen");
+	return -1;
+}
+
+static int
+ui_flight_state_update (UI * ui, DroneState state)
+{
+	SDL_Surface *text;
+	SDL_Rect position;
+	const char *state_str;
+
+	/* state is at top-left of the screen */
+	position.x = 5;
+	position.y = 0;
+
+	switch (state) {
+		case DRONE_STATE_LANDED:
+			state_str = "landed";
+			break;
+
+		case DRONE_STATE_TAKING_OFF:
+			state_str = "taking off";
+			break;
+
+		case DRONE_STATE_FLYING:
+			state_str = "flying";
+			break;
+
+		case DRONE_STATE_LANDING:
+			state_str = "landing";
+			break;
+
+		case DRONE_STATE_EMERGENCY:
+			state_str = "emergency";
+			break;
+
+		default:
+			state_str = "unknown";
+			break;
+	}
+
+	text = TTF_RenderText_Blended(ui->font, state_str, color_white);
+	if (text == NULL)
+		goto no_text;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	SDL_FreeSurface(text);
+	return 0;
+
+no_text:
+	PSPLOG_ERROR("failed to render text");
+	return -1;
+
+blit_failed:
+	PSPLOG_ERROR("failed to blit text to screen");
+	return -1;
+}
+
+static int
+ui_flight_update(UI * ui, Drone * drone)
+{
+	SDL_Rect top_bar;
+	int ret;
+
+	/* clear screen */
+	SDL_FillRect (ui->screen, NULL,
+			SDL_MapRGB(ui->screen->format, 28, 142, 207));
+
+	/* draw top bar */
+	top_bar.x = 0;
+	top_bar.y = 0;
+	top_bar.w = 480;
+	top_bar.h = 20;
+	SDL_FillRect (ui->screen, &top_bar,
+			SDL_MapRGB(ui->screen->format, 0, 0, 0));
+
+	ret = ui_flight_battery_update (ui, drone->battery);
+	ret = ui_flight_state_update (ui, drone->state);
+
+	sceDisplayWaitVblankStart();
+	SDL_Flip(ui->screen);
+
+	return ret;
+}
+
+
 int
 ui_init(UI * ui, int width, int height)
 {
@@ -215,6 +344,8 @@ ui_flight_run(UI * ui, Drone * drone)
 		int pitch = 0;
 		int roll = 0;
 		int gaz = 0;
+
+		ui_flight_update (ui, drone);
 
 		sceCtrlReadBufferPositive (&pad, 1);
 		sceCtrlReadLatch(&latch);
