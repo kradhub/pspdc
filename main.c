@@ -288,10 +288,6 @@ main_menu:
 	PSPLOG_INFO("connected to %s (%s)", ssid.ssid, gateway.gateway);
 	PSPLOG_INFO("get ip: %s", ip.ip);
 
-	/* initialize controller */
-	sceCtrlSetSamplingCycle(0); /* in ms: 0=VSYNC */
-	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
-
 	/* initialize and connect to drone */
 	PSPLOG_INFO ("initializing drone");
 	ret = drone_init (&drone, DRONE_IP, DRONE_DISCOVERY_PORT,

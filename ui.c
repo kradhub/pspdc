@@ -52,6 +52,10 @@ ui_init(UI * ui, int width, int height)
 	if (ui->font == NULL)
 		goto no_font;
 
+	/* initialize controller */
+	sceCtrlSetSamplingCycle(0); /* in ms: 0=VSYNC */
+	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+
 	return 0;
 
 no_screen:
