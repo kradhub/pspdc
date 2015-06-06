@@ -32,6 +32,14 @@
 #include <libARNetworkAL/ARNetworkAL.h>
 #include <libARNetwork/ARNetwork.h>
 
+typedef enum {
+	DRONE_STATE_LANDED = 0,
+	DRONE_STATE_TAKING_OFF,
+	DRONE_STATE_FLYING,
+	DRONE_STATE_LANDING,
+	DRONE_STATE_EMERGENCY
+} DroneState;
+
 typedef struct _drone Drone;
 
 struct _drone
@@ -53,6 +61,7 @@ struct _drone
 	int running;
 
 	/* drone state */
+	DroneState state;
 	unsigned int battery;
 };
 

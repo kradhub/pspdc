@@ -256,6 +256,39 @@ on_battery_status_changed (uint8_t percent, void * userdata)
 	drone->battery = percent;
 }
 
+static void
+on_flying_state_changed (eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE state,
+		void *userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	switch (state) {
+		case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDED:
+			drone->state = DRONE_STATE_LANDED;
+			break;
+
+		case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_TAKINGOFF :
+			drone->state = DRONE_STATE_TAKING_OFF;
+			break;
+
+		case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_HOVERING:
+		case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_FLYING:
+			drone->state = DRONE_STATE_FLYING;
+			break;
+
+		case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_LANDING:
+			drone->state = DRONE_STATE_LANDING;
+			break;
+
+		case ARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE_EMERGENCY:
+			drone->state = DRONE_STATE_EMERGENCY;
+			break;
+
+		default:
+			break;
+	}
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -418,6 +451,8 @@ drone_init(Drone * drone, char * ipv4, int discovery_port, int c2d_port,
 	drone->c2d_port = c2d_port;
 	drone->running = 1;
 
+	drone->state = DRONE_STATE_LANDED;
+
 	drone->net_al = ARNETWORKAL_Manager_New (&net_al_error);
 	if (net_al_error != ARNETWORKAL_OK) {
 		PSPLOG_ERROR ("failed to create networl al manager");
@@ -453,6 +488,8 @@ drone_init(Drone * drone, char * ipv4, int discovery_port, int c2d_port,
 
 	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
 			on_battery_status_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingStateFlyingStateChangedCallback (
+			on_flying_state_changed, drone);
 
 	PSPLOG_INFO ("drone initialized");
 

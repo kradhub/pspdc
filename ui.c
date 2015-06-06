@@ -219,6 +219,9 @@ ui_flight_run(UI * ui, Drone * drone)
 		sceCtrlReadBufferPositive (&pad, 1);
 		sceCtrlReadLatch(&latch);
 
+		is_flying = (drone->state == DRONE_STATE_TAKING_OFF) ||
+			(drone->state == DRONE_STATE_FLYING);
+
 		/* Check triangle and circle transition */
 		if ((latch.uiPress & PSP_CTRL_TRIANGLE) &&
 				(latch.uiMake & PSP_CTRL_TRIANGLE)) {
@@ -226,8 +229,6 @@ ui_flight_run(UI * ui, Drone * drone)
 				drone_landing (drone);
 			else
 				drone_takeoff (drone);
-
-			is_flying = !is_flying;
 		}
 
 		if ((latch.uiPress & PSP_CTRL_CIRCLE) &&
