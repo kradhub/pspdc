@@ -248,6 +248,13 @@ _on_receive_json (uint8_t *data, uint32_t size, char * ipv4, void * userdata)
 	return ARDISCOVERY_OK;
 }
 
+static void
+on_battery_status_changed (uint8_t percent, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	drone->battery = percent;
+}
 
 static int
 drone_discover (Drone * drone)
@@ -443,6 +450,9 @@ drone_init(Drone * drone, char * ipv4, int discovery_port, int c2d_port,
 		PSPLOG_ERROR ("failed to create navdata thread");
 		goto cleanup;
 	}
+
+	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
+			on_battery_status_changed, drone);
 
 	PSPLOG_INFO ("drone initialized");
 
