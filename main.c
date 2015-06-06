@@ -37,7 +37,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <errno.h>
-#include <pspctrl.h>
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 
