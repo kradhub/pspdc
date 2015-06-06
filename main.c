@@ -252,9 +252,7 @@ int main(int argc, char *argv[])
 	union SceNetApctlInfo ssid;
 	union SceNetApctlInfo gateway;
 	union SceNetApctlInfo ip;
-	int is_flying = 0;
 	UI ui;
-	int selected_id;
 
 	setup_callback();
 
@@ -268,8 +266,7 @@ int main(int argc, char *argv[])
 		goto end;
 
 main_menu:
-	selected_id = ui_main_menu_run(&ui);
-	switch (selected_id) {
+	switch (ui_main_menu_run(&ui)) {
 		case MAIN_MENU_CONNECT:
 			break;
 		case MAIN_MENU_EXIT:
