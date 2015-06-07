@@ -39,6 +39,12 @@ enum
 	MAIN_MENU_EXIT
 };
 
+enum
+{
+	FLIGHT_UI_QUIT = 0,
+	FLIGHT_UI_MAIN_MENU = 1
+};
+
 typedef struct _ui UI;
 
 struct _ui

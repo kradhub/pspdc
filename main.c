@@ -211,9 +211,13 @@ main_menu:
 	drone_connect(&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
 			DRONE_C2D_PORT, DRONE_D2C_PORT);
 
-	ui_flight_run(&ui, &drone);
+	ret = ui_flight_run(&ui, &drone);
 
 	drone_disconnect(&drone);
+	sceNetApctlDisconnect();
+
+	if (ret == FLIGHT_UI_MAIN_MENU)
+		goto main_menu;
 
 end:
 	drone_deinit(&drone);

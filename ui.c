@@ -40,6 +40,10 @@ extern int running;
 
 unsigned int __attribute__((aligned(16))) list[4096];
 
+enum {
+	FLIGHT_MENU_QUIT = 0,
+};
+
 static int
 ui_flight_battery_update(UI * ui, unsigned int percent)
 {
@@ -168,6 +172,54 @@ ui_flight_update(UI * ui, Drone * drone)
 	return ret;
 }
 
+static int
+ui_flight_menu(UI * ui)
+{
+	Menu *menu;
+	SDL_Surface *surface;
+	SDL_Rect position;
+	int selected_id = -1;
+
+	menu = menu_new(ui->font, "menu");
+	menu_add_entry(menu, FLIGHT_MENU_QUIT, "Return to main menu");
+
+	/* center position in screen */
+	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
+	position.y = (ui->screen->h - menu_get_height(menu)) / 2;
+
+	while (running) {
+		SceCtrlLatch latch;
+
+		surface = menu_render(menu);
+		SDL_BlitSurface(surface, NULL, ui->screen, &position);
+		SDL_FreeSurface(surface);
+
+		sceDisplayWaitVblankStart();
+		SDL_Flip(ui->screen);
+
+		sceCtrlReadLatch(&latch);
+		if ((latch.uiPress & PSP_CTRL_UP) &&
+				(latch.uiMake & PSP_CTRL_UP))
+			menu_select_prev_entry(menu);
+
+		if ((latch.uiPress & PSP_CTRL_DOWN) &&
+				(latch.uiMake & PSP_CTRL_DOWN))
+			menu_select_next_entry(menu);
+
+		if ((latch.uiPress & PSP_CTRL_CROSS) &&
+				(latch.uiMake & PSP_CTRL_CROSS)) {
+			selected_id = menu_get_selected_id(menu);
+			break;
+		}
+
+		if ((latch.uiPress & PSP_CTRL_START) &&
+				(latch.uiMake & PSP_CTRL_START))
+			break;
+	}
+
+	menu_free(menu);
+	return selected_id;
+}
 
 int
 ui_init(UI * ui, int width, int height)
@@ -335,6 +387,7 @@ ui_network_dialog_run(UI * ui)
 int
 ui_flight_run(UI * ui, Drone * drone)
 {
+	int ret = 0;
 	int is_flying = 0;
 
 	while (running) {
@@ -368,6 +421,14 @@ ui_flight_run(UI * ui, Drone * drone)
 			is_flying = 0;
 		}
 
+		if ((latch.uiPress & PSP_CTRL_START) &&
+				(latch.uiMake & PSP_CTRL_START)) {
+			if (ui_flight_menu(ui) == FLIGHT_MENU_QUIT) {
+				ret = FLIGHT_UI_MAIN_MENU;
+				break;
+			}
+		}
+
 		if ((latch.uiPress & PSP_CTRL_SELECT) &&
 				(latch.uiMake & PSP_CTRL_SELECT))
 			drone_flat_trim (drone);
@@ -397,5 +458,5 @@ ui_flight_run(UI * ui, Drone * drone)
 		drone_flight_control (drone, gaz, yaw, pitch, roll);
 	}
 
-	return 0;
+	return ret;
 }
