@@ -176,11 +176,10 @@ static int
 ui_flight_menu(UI * ui)
 {
 	Menu *menu;
-	SDL_Surface *surface;
 	SDL_Rect position;
 	int selected_id = -1;
 
-	menu = menu_new(ui->font);
+	menu = menu_new(ui->font, MENU_CANCEL_ON_START);
 	menu_add_entry(menu, FLIGHT_MENU_QUIT, "Return to main menu");
 
 	/* center position in screen */
@@ -188,35 +187,27 @@ ui_flight_menu(UI * ui)
 	position.y = (ui->screen->h - menu_get_height(menu)) / 2;
 
 	while (running) {
-		SceCtrlLatch latch;
+		switch (menu_update(menu)) {
+			case MENU_STATE_CLOSE:
+				selected_id = menu_get_selected_id(menu);
+				goto done;
+				break;
 
-		surface = menu_render(menu);
-		SDL_BlitSurface(surface, NULL, ui->screen, &position);
-		SDL_FreeSurface(surface);
+			case MENU_STATE_VISIBLE:
+				menu_render_to(menu, ui->screen, &position);
+				sceDisplayWaitVblankStart();
+				SDL_Flip(ui->screen);
+				break;
 
-		sceDisplayWaitVblankStart();
-		SDL_Flip(ui->screen);
+			case MENU_STATE_CANCELLED:
+			default:
+				goto done;
+				break;
 
-		sceCtrlReadLatch(&latch);
-		if ((latch.uiPress & PSP_CTRL_UP) &&
-				(latch.uiMake & PSP_CTRL_UP))
-			menu_select_prev_entry(menu);
-
-		if ((latch.uiPress & PSP_CTRL_DOWN) &&
-				(latch.uiMake & PSP_CTRL_DOWN))
-			menu_select_next_entry(menu);
-
-		if ((latch.uiPress & PSP_CTRL_CROSS) &&
-				(latch.uiMake & PSP_CTRL_CROSS)) {
-			selected_id = menu_get_selected_id(menu);
-			break;
 		}
-
-		if ((latch.uiPress & PSP_CTRL_START) &&
-				(latch.uiMake & PSP_CTRL_START))
-			break;
 	}
 
+done:
 	menu_free(menu);
 	return selected_id;
 }
@@ -264,11 +255,10 @@ int ui_main_menu_run(UI * ui)
 	Menu *main_menu;
 	SDL_Surface *screen = ui->screen;
 	TTF_Font *font = ui->font;
-	SDL_Surface *surface;
 	SDL_Rect position;
 	int selected_id = -1;
 
-	main_menu = menu_new(font);
+	main_menu = menu_new(font, 0);
 	menu_add_entry(main_menu, MAIN_MENU_CONNECT, "Connect to drone");
 	menu_add_entry(main_menu, MAIN_MENU_EXIT, "Exit");
 
@@ -277,32 +267,22 @@ int ui_main_menu_run(UI * ui)
 	position.y = (screen->h - menu_get_height(main_menu)) / 2;
 
 	while (running) {
-		SceCtrlLatch latch;
-
-		surface = menu_render(main_menu);
-		SDL_FillRect(screen, NULL, SDL_MapRGB(screen->format, 0, 0, 0));
-		SDL_BlitSurface(surface, NULL, screen, &position);
-		SDL_FreeSurface(surface);
-
-		sceDisplayWaitVblankStart();
-		SDL_Flip(screen);
-
-		sceCtrlReadLatch(&latch);
-		if ((latch.uiPress & PSP_CTRL_UP) &&
-				(latch.uiMake & PSP_CTRL_UP))
-			menu_select_prev_entry(main_menu);
-
-		if ((latch.uiPress & PSP_CTRL_DOWN) &&
-				(latch.uiMake & PSP_CTRL_DOWN))
-			menu_select_next_entry(main_menu);
-
-		if ((latch.uiPress & PSP_CTRL_CROSS) &&
-				(latch.uiMake & PSP_CTRL_CROSS)) {
-			selected_id = menu_get_selected_id(main_menu);
-			break;
+		switch (menu_update(main_menu)) {
+			case MENU_STATE_CLOSE:
+				selected_id = menu_get_selected_id(main_menu);
+				goto done;
+				break;
+			default:
+				SDL_FillRect(screen, NULL,
+						SDL_MapRGB(screen->format, 0, 0, 0));
+				menu_render_to(main_menu, screen, &position);
+				sceDisplayWaitVblankStart();
+				SDL_Flip(screen);
+				break;
 		}
 	}
 
+done:
 	menu_free(main_menu);
 	return selected_id;
 }

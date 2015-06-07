@@ -31,9 +31,18 @@
 #include <SDL/SDL.h>
 #include <SDL/SDL_ttf.h>
 
+#define MENU_CANCEL_ON_START 1
+
+typedef enum
+{
+	MENU_STATE_CLOSE = 0,
+	MENU_STATE_VISIBLE,
+	MENU_STATE_CANCELLED,
+} MenuState;
+
 typedef struct _Menu Menu;
 
-Menu *menu_new(TTF_Font * font);
+Menu *menu_new(TTF_Font * font, int options);
 void menu_free(Menu * menu);
 
 void menu_set_default_color(Menu * menu, const SDL_Color * color);
@@ -50,6 +59,7 @@ int menu_select_entry(Menu * menu, int id);
 int menu_select_prev_entry(Menu * menu);
 int menu_select_next_entry(Menu * menu);
 
-SDL_Surface *menu_render(Menu * menu);
+MenuState menu_update(Menu * menu);
+void menu_render_to(Menu * menu, SDL_Surface * dest, const SDL_Rect * position);
 
 #endif

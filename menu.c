@@ -25,11 +25,17 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <pspctrl.h>
 #include <string.h>
 
 #include "color.h"
 #include "menu.h"
 #include "psplog.h"
+
+#define MENU_CHOICE_CLOSE 0
+
+#define EVENT_BUTTON_DOWN(latch, button) \
+	(((latch)->uiPress & (button)) && ((latch)->uiMake & (button)))
 
 typedef struct _MenuEntry MenuEntry;
 
@@ -46,6 +52,8 @@ struct _MenuEntry
 struct _Menu
 {
 	TTF_Font *font;
+
+	int options;
 
 	/* not selected text color */
 	SDL_Color default_color;
@@ -180,12 +188,11 @@ render_failed:
 	return -1;
 }
 
-
 /*
  * API
  */
 Menu *
-menu_new(TTF_Font * font)
+menu_new(TTF_Font * font, int options)
 {
 	Menu *menu;
 
@@ -193,6 +200,7 @@ menu_new(TTF_Font * font)
 	if (!menu)
 		return NULL;
 
+	menu->options = options;
 	menu->font = font;
 	menu->head = NULL;
 	menu->tail = NULL;
@@ -250,30 +258,42 @@ menu_get_selected_id(Menu * menu)
 	return menu->selected->id;
 }
 
-/* Render menu to a SDL_Surface
- * Don't forget to free returned surface after usage */
-SDL_Surface *
-menu_render(Menu * menu)
+MenuState
+menu_update(Menu * menu)
 {
-	SDL_Surface *surface;
+	MenuState state = MENU_STATE_VISIBLE;
+	SceCtrlLatch latch;
+
+	sceCtrlReadLatch(&latch);
+	if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_UP))
+		menu_select_prev_entry(menu);
+
+	if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_DOWN))
+		menu_select_next_entry(menu);
+
+	if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_CROSS))
+		state = MENU_STATE_CLOSE;
+
+	if ((menu->options & MENU_CANCEL_ON_START) &&
+			EVENT_BUTTON_DOWN(&latch, PSP_CTRL_START))
+		state = MENU_STATE_CANCELLED;
+
+	return state;
+}
+
+void
+menu_render_to(Menu * menu, SDL_Surface * dest, const SDL_Rect * position)
+{
 	MenuEntry *e;
 	SDL_Rect dest_pos = { 0, 0, 0, 0 };
 
-	if (menu->head == NULL)
-		return NULL;
+	dest_pos.x = position->x;
+	dest_pos.y = position->y;
 
 	if (menu->updated) {
 		menu_refresh_all_entries(menu);
 		menu->updated = 0;
 	}
-
-	PSPLOG_DEBUG("menu: creating menu surface of size %ux%u", menu->width,
-			menu->height);
-
-	surface = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_SRCALPHA,
-			menu->width, menu->height, 32, 0, 0, 0, 0);
-	if (surface == NULL)
-		return NULL;
 
 	for (e = menu->head; e != NULL; e = e->next) {
 		if (e->surface == NULL)
@@ -282,13 +302,11 @@ menu_render(Menu * menu)
 		PSPLOG_DEBUG ("menu: blitting entry %p surface (%s) @ (%d,%d)",
 				e, e->title, dest_pos.x, dest_pos.y);
 
-		SDL_BlitSurface(e->surface, NULL, surface, &dest_pos);
+		SDL_BlitSurface(e->surface, NULL, dest, &dest_pos);
 
 		/* update position for next entry */
 		dest_pos.y += dest_pos.h;
 	}
-
-	return surface;
 }
 
 int
