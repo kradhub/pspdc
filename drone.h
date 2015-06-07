@@ -63,6 +63,7 @@ struct _drone
 	/* drone state */
 	DroneState state;
 	unsigned int battery;
+	unsigned int hull;
 };
 
 int drone_init (Drone * drone);
@@ -80,5 +81,8 @@ int drone_flat_trim (Drone * drone);
 
 /* piloting commands */
 int drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll);
+
+/* settings commands */
+int drone_hull_set_active (Drone * drone, int active);
 
 #endif

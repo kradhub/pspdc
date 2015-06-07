@@ -42,6 +42,7 @@ unsigned int __attribute__((aligned(16))) list[4096];
 
 enum {
 	FLIGHT_MENU_QUIT = 0,
+	FLIGHT_MENU_HULL_SWITCH = 1,
 };
 
 static int
@@ -172,11 +173,22 @@ ui_flight_update(UI * ui, Drone * drone)
 	return ret;
 }
 
+static void
+on_hull_switch_toggle(MenuSwitchEntry * entry, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+	int value = menu_switch_entry_get_active(entry);
+
+	if (value != drone->hull)
+		drone_hull_set_active(drone, value);
+}
+
 static int
-ui_flight_menu(UI * ui)
+ui_flight_menu(UI * ui, Drone * drone)
 {
 	Menu *menu;
 	MenuButtonEntry *main_menu_button;
+	MenuSwitchEntry *hull_switch;
 	SDL_Rect position;
 	int selected_id = -1;
 
@@ -184,6 +196,14 @@ ui_flight_menu(UI * ui)
 	main_menu_button = menu_button_entry_new(FLIGHT_MENU_QUIT,
 			"Return to main menu");
 
+	hull_switch = menu_switch_entry_new(FLIGHT_MENU_HULL_SWITCH,
+			"Hull set");
+	menu_switch_entry_set_values_labels(hull_switch, "no", "yes");
+	menu_switch_entry_set_active(hull_switch, drone->hull);
+	menu_switch_entry_set_toggled_callback(hull_switch,
+			on_hull_switch_toggle, drone);
+
+	menu_add_entry(menu, (MenuEntry *) hull_switch);
 	menu_add_entry(menu, (MenuEntry *) main_menu_button);
 
 	/* center position in screen */
@@ -198,6 +218,9 @@ ui_flight_menu(UI * ui)
 				break;
 
 			case MENU_STATE_VISIBLE:
+				/* sync option with drone */
+				menu_switch_entry_set_active(hull_switch,
+						drone->hull);
 				menu_render_to(menu, ui->screen, &position);
 				sceDisplayWaitVblankStart();
 				SDL_Flip(ui->screen);
@@ -413,7 +436,7 @@ ui_flight_run(UI * ui, Drone * drone)
 
 		if ((latch.uiPress & PSP_CTRL_START) &&
 				(latch.uiMake & PSP_CTRL_START)) {
-			if (ui_flight_menu(ui) == FLIGHT_MENU_QUIT) {
+			if (ui_flight_menu(ui, drone) == FLIGHT_MENU_QUIT) {
 				ret = FLIGHT_UI_MAIN_MENU;
 				break;
 			}
