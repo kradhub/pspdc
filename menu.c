@@ -45,7 +45,6 @@ struct _MenuEntry
 
 struct _Menu
 {
-	char *title;
 	TTF_Font *font;
 
 	/* not selected text color */
@@ -186,7 +185,7 @@ render_failed:
  * API
  */
 Menu *
-menu_new(TTF_Font * font, const char * title)
+menu_new(TTF_Font * font)
 {
 	Menu *menu;
 
@@ -194,7 +193,6 @@ menu_new(TTF_Font * font, const char * title)
 	if (!menu)
 		return NULL;
 
-	menu->title = NULL;
 	menu->font = font;
 	menu->head = NULL;
 	menu->tail = NULL;
@@ -205,9 +203,6 @@ menu_new(TTF_Font * font, const char * title)
 	menu->width = 0;
 	menu->height = 0;
 
-	if (title)
-		menu->title = strdup(title);
-
 	return menu;
 }
 
@@ -215,9 +210,6 @@ void
 menu_free(Menu * menu)
 {
 	MenuEntry *e;
-
-	if (menu->title)
-		free(menu->title);
 
 	for (e = menu->head; e != NULL; e = e->next)
 		menu_entry_free(e);

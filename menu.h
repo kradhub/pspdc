@@ -33,7 +33,7 @@
 
 typedef struct _Menu Menu;
 
-Menu *menu_new(TTF_Font * font, const char * title);
+Menu *menu_new(TTF_Font * font);
 void menu_free(Menu * menu);
 
 void menu_set_default_color(Menu * menu, const SDL_Color * color);

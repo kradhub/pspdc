@@ -180,7 +180,7 @@ ui_flight_menu(UI * ui)
 	SDL_Rect position;
 	int selected_id = -1;
 
-	menu = menu_new(ui->font, "menu");
+	menu = menu_new(ui->font);
 	menu_add_entry(menu, FLIGHT_MENU_QUIT, "Return to main menu");
 
 	/* center position in screen */
@@ -268,7 +268,7 @@ int ui_main_menu_run(UI * ui)
 	SDL_Rect position;
 	int selected_id = -1;
 
-	main_menu = menu_new(font, "Main menu");
+	main_menu = menu_new(font);
 	menu_add_entry(main_menu, MAIN_MENU_CONNECT, "Connect to drone");
 	menu_add_entry(main_menu, MAIN_MENU_EXIT, "Exit");
 
