@@ -278,8 +278,8 @@ menu_render(Menu * menu)
 	PSPLOG_DEBUG("menu: creating menu surface of size %ux%u", menu->width,
 			menu->height);
 
-	surface = SDL_CreateRGBSurface(SDL_HWSURFACE, menu->width, menu->height,
-			32, 0, 0, 0, 0);
+	surface = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_SRCALPHA,
+			menu->width, menu->height, 32, 0, 0, 0, 0);
 	if (surface == NULL)
 		return NULL;
 
