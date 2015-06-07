@@ -37,16 +37,45 @@
 #define EVENT_BUTTON_DOWN(latch, button) \
 	(((latch)->uiPress & (button)) && ((latch)->uiMake & (button)))
 
-typedef struct _MenuEntry MenuEntry;
+typedef void (*MenuEntryFreeFunction)(MenuEntry * entry);
+typedef void (*MenuEntryRenderFunction)(MenuEntry * entry, TTF_Font * font, const SDL_Color * color);
 
 struct _MenuEntry
 {
+	MenuEntryType type;
+	Menu *owner;
+
 	int id;
 	char *title;
 	SDL_Surface *surface;
 
 	MenuEntry *prev;
 	MenuEntry *next;
+
+	void (*free)(MenuEntry * entry);
+	int (*render)(MenuEntry * entry, TTF_Font * font, const SDL_Color * color);
+};
+
+struct _MenuButtonEntry
+{
+	MenuEntry parent;
+};
+
+struct _MenuSwitchEntry
+{
+	MenuEntry parent;
+
+	char *on_label;
+	char *off_label;
+
+	SDL_Surface *surface_on;
+	SDL_Surface *surface_off;
+
+	int active;
+
+	void *userdata;
+
+	void (*toggled)(MenuSwitchEntry * entry, void * userdata);
 };
 
 struct _Menu
@@ -72,56 +101,16 @@ struct _Menu
 	unsigned int height;
 };
 
-static void
-menu_entry_replace_surface(MenuEntry *entry, SDL_Surface * new_surface)
-{
-	if (entry->surface)
-		SDL_FreeSurface(entry->surface);
-
-	entry->surface = new_surface;
-}
-
-static int
-menu_entry_render(MenuEntry * entry, TTF_Font * font, const SDL_Color * color)
-{
-	SDL_Surface *surface;
-
-	surface = TTF_RenderText_Blended(font, entry->title, *color);
-	if (!surface)
-		return -1;
-
-	menu_entry_replace_surface(entry, surface);
-
-	return 0;
-}
-
-static MenuEntry *
-menu_entry_new(int id, const char * title)
-{
-	MenuEntry *entry;
-
-	entry = malloc(sizeof(MenuEntry));
-	if (!entry)
-		return NULL;
-
-	entry->id = id;
-	entry->title = strdup(title);
-	entry->prev = entry->next = NULL;
-	entry->surface = NULL;
-
-	return entry;
-}
+static int menu_entry_render(MenuEntry * entry, TTF_Font * font,
+		const SDL_Color * color);
 
 static void
-menu_entry_free(MenuEntry * entry)
+menu_surface_replace_helper(SDL_Surface ** old, SDL_Surface * new)
 {
-	if (entry->title)
-		free(entry->title);
+	if (*old)
+		SDL_FreeSurface(*old);
 
-	if (entry->surface)
-		free(entry->surface);
-
-	free(entry);
+	*old = new;
 }
 
 /*
@@ -156,36 +145,22 @@ menu_get_entry_by_id(Menu * menu, int id)
 static int
 menu_select_entry_helper(Menu * menu, MenuEntry * entry)
 {
-	SDL_Surface *prev_selected = NULL;
-	SDL_Surface *new_selected = NULL;
+	int ret;
 
+	/* unselect currently selected entry */
 	if (menu->selected) {
-		/* make previous selected entry back to normal */
-		prev_selected = TTF_RenderText_Blended(menu->font,
-				menu->selected->title, menu->default_color);
-		if (prev_selected == NULL)
-			goto render_failed;
+		ret = menu_entry_render(menu->selected, menu->font,
+				&menu->default_color);
+
+		if (ret < 0)
+			goto done;
 	}
 
-	new_selected = TTF_RenderText_Blended(menu->font, entry->title,
-			menu->selected_color);
-	if (new_selected == NULL)
-		goto render_failed;
-
-	if (menu->selected)
-		menu_entry_replace_surface(menu->selected, prev_selected);
-
-	menu_entry_replace_surface(entry, new_selected);
+	ret = menu_entry_render(entry, menu->font, &menu->selected_color);
 	menu->selected = entry;
 
-	return 0;
-
-render_failed:
-	PSPLOG_ERROR("menu_select_entry: failed to render one entry");
-	if (prev_selected)
-		SDL_FreeSurface(prev_selected);
-
-	return -1;
+done:
+	return ret;
 }
 
 /*
@@ -262,6 +237,7 @@ MenuState
 menu_update(Menu * menu)
 {
 	MenuState state = MENU_STATE_VISIBLE;
+	MenuEntry *entry = menu->selected;
 	SceCtrlLatch latch;
 
 	sceCtrlReadLatch(&latch);
@@ -271,8 +247,19 @@ menu_update(Menu * menu)
 	if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_DOWN))
 		menu_select_next_entry(menu);
 
-	if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_CROSS))
-		state = MENU_STATE_CLOSE;
+	if (entry->type == MENU_ENTRY_TYPE_BUTTON) {
+		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_CROSS))
+			state = MENU_STATE_CLOSE;
+	} else if (entry->type == MENU_ENTRY_TYPE_SWITCH) {
+		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_LEFT) ||
+				EVENT_BUTTON_DOWN(&latch, PSP_CTRL_RIGHT)) {
+			menu_switch_entry_toggle((MenuSwitchEntry *) entry);
+
+			/* re-render to reflect change */
+			menu_entry_render(entry, menu->font,
+					&menu->selected_color);
+		}
+	}
 
 	if ((menu->options & MENU_CANCEL_ON_START) &&
 			EVENT_BUTTON_DOWN(&latch, PSP_CTRL_START))
@@ -310,12 +297,9 @@ menu_render_to(Menu * menu, SDL_Surface * dest, const SDL_Rect * position)
 }
 
 int
-menu_select_entry(Menu * menu, int id)
+menu_select_entry(Menu * menu, MenuEntry * entry)
 {
-	MenuEntry *entry;
-
-	entry = menu_get_entry_by_id(menu, id);
-	if (entry == NULL)
+	if (entry->owner != menu)
 		return -1;
 
 	return menu_select_entry_helper(menu, entry);
@@ -346,14 +330,9 @@ menu_select_next_entry(Menu * menu)
 }
 
 int
-menu_add_entry(Menu * menu, int id, const char * title)
+menu_add_entry(Menu * menu, MenuEntry * entry)
 {
-	MenuEntry *entry;
 	SDL_Color *color;
-
-	entry = menu_entry_new(id, title);
-	if (!entry)
-		goto cleanup;
 
 	/* first entry will be selected by default */
 	if (menu->head == NULL)
@@ -362,7 +341,7 @@ menu_add_entry(Menu * menu, int id, const char * title)
 		color = &menu->default_color;
 
 	if (menu_entry_render(entry, menu->font, color) < 0)
-		goto cleanup;
+		goto render_failed;
 
 	if (entry->surface->w > menu->width)
 		menu->width = entry->surface->w;
@@ -381,20 +360,19 @@ menu_add_entry(Menu * menu, int id, const char * title)
 		menu->selected = entry;
 	}
 
+	entry->owner = menu;
+
 	return 0;
 
-cleanup:
-	menu_entry_free(entry);
+render_failed:
+	PSPLOG_ERROR("failed to render menu entry");
 	return -1;
 }
 
 void
-menu_remove_entry(Menu * menu, int id)
+menu_remove_entry(Menu * menu, MenuEntry * entry)
 {
-	MenuEntry *entry;
-
-	entry = menu_get_entry_by_id(menu, id);
-	if (entry == NULL)
+	if (entry->owner != menu)
 		return;
 
 	if (entry->prev)
@@ -413,4 +391,201 @@ menu_remove_entry(Menu * menu, int id)
 		menu->selected = menu->head;
 
 	menu_entry_free(entry);
+}
+
+/**
+ * MenuEntry implementation
+ */
+static int
+menu_entry_render_default(MenuEntry * entry, TTF_Font * font,
+		const SDL_Color * color)
+{
+	SDL_Surface *surface;
+
+	surface = TTF_RenderText_Blended(font, entry->title, *color);
+	if (!surface)
+		return -1;
+
+	menu_surface_replace_helper(&entry->surface, surface);
+	return 0;
+}
+
+static void
+menu_entry_init(MenuEntry * entry, MenuEntryType type, int id,
+		const char * title, MenuEntryFreeFunction free)
+{
+	entry->type = type;
+	entry->owner = NULL;
+	entry->id = id;
+	entry->title = strdup(title);
+	entry->surface = NULL;
+	entry->prev = entry->next = NULL;
+	entry->free = free;
+	entry->render = menu_entry_render_default;
+}
+
+static int
+menu_entry_render(MenuEntry * entry, TTF_Font * font, const SDL_Color * color)
+{
+	if (!entry->render)
+		return -1;
+
+	return entry->render(entry, font, color);
+}
+
+void
+menu_entry_free(MenuEntry * entry)
+{
+	if (entry->free)
+		entry->free(entry);
+
+	if (entry->surface)
+		SDL_FreeSurface(entry->surface);
+
+	if (entry->title)
+		free(entry->title);
+
+	free (entry);
+}
+
+MenuEntryType
+menu_entry_get_type(MenuEntry * entry)
+{
+	return entry->type;
+}
+
+/**
+ * MenuButtonEntry API implementation
+ */
+MenuButtonEntry *
+menu_button_entry_new(int id, const char * title)
+{
+	MenuButtonEntry *entry;
+
+	entry = malloc(sizeof(MenuButtonEntry));
+	if (!entry)
+		return NULL;
+
+	menu_entry_init(&entry->parent, MENU_ENTRY_TYPE_BUTTON, id, title,
+			NULL);
+
+	return entry;
+}
+
+/**
+ * MenuSwitchEntry API implementation
+ */
+static int
+menu_switch_entry_render(MenuEntry * entry, TTF_Font * font,
+		const SDL_Color * color)
+{
+	MenuSwitchEntry *sw_entry = (MenuSwitchEntry *) entry;
+	SDL_Surface *surface;
+	const char *value_str;
+	char *text;
+	int len;
+	int ret = -1;
+
+	if (sw_entry->active)
+		value_str = sw_entry->on_label;
+	else
+		value_str = sw_entry->off_label;
+
+	len = 10 + strlen(entry->title) + strlen(value_str);
+	text = malloc(len * sizeof(char));
+	snprintf(text, len, "%s : <- %s ->", entry->title, value_str);
+
+	surface = TTF_RenderText_Blended(font, text, *color);
+	if (!surface) {
+		PSPLOG_ERROR("failed to render switch text, reason: %s",
+				TTF_GetError());
+		goto done;
+	}
+
+	menu_surface_replace_helper(&entry->surface, surface);
+	ret = 0;
+
+done:
+	free(text);
+	return ret;
+}
+
+static void
+menu_switch_entry_free(MenuSwitchEntry * entry)
+{
+	if (entry->surface_off)
+		SDL_FreeSurface(entry->surface_off);
+
+	if (entry->surface_on)
+		SDL_FreeSurface(entry->surface_on);
+
+	free(entry->on_label);
+	free(entry->off_label);
+}
+
+MenuSwitchEntry *
+menu_switch_entry_new (int id, const char *title)
+{
+	MenuSwitchEntry *entry;
+
+	entry = malloc(sizeof(MenuSwitchEntry));
+
+	menu_entry_init(&entry->parent, MENU_ENTRY_TYPE_SWITCH, id, title,
+			(MenuEntryFreeFunction) menu_switch_entry_free);
+	entry->on_label = strdup("on");
+	entry->off_label = strdup("off");
+	entry->surface_on = NULL;
+	entry->surface_off = NULL;
+	entry->active = 0;
+	entry->toggled = NULL;
+
+	entry->parent.render = menu_switch_entry_render;
+
+	return entry;
+}
+
+int
+menu_switch_entry_get_active(MenuSwitchEntry * entry)
+{
+	return entry->active;
+}
+
+void
+menu_switch_entry_set_active(MenuSwitchEntry * entry, int is_active)
+{
+	if (entry->active == is_active)
+		return;
+
+	entry->active = is_active;
+	if (entry->toggled)
+		entry->toggled(entry, entry->userdata);
+}
+
+void
+menu_switch_entry_toggle(MenuSwitchEntry * entry)
+{
+	menu_switch_entry_set_active(entry, !entry->active);
+}
+
+void
+menu_switch_entry_set_values_labels(MenuSwitchEntry * entry,
+		const char * off_label, const char * on_label)
+{
+	if (off_label) {
+		free(entry->off_label);
+		entry->off_label = strdup(off_label);
+	}
+
+	if (on_label) {
+		free(entry->on_label);
+		entry->on_label = strdup(on_label);
+	}
+}
+
+void
+menu_switch_entry_set_toggled_callback(MenuSwitchEntry * entry,
+		MenuSwitchEntryToggledCallback callback, void * userdata)
+{
+	entry->toggled = callback;
+	entry->userdata = userdata;
 }

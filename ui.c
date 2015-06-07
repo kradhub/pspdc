@@ -176,11 +176,15 @@ static int
 ui_flight_menu(UI * ui)
 {
 	Menu *menu;
+	MenuButtonEntry *main_menu_button;
 	SDL_Rect position;
 	int selected_id = -1;
 
 	menu = menu_new(ui->font, MENU_CANCEL_ON_START);
-	menu_add_entry(menu, FLIGHT_MENU_QUIT, "Return to main menu");
+	main_menu_button = menu_button_entry_new(FLIGHT_MENU_QUIT,
+			"Return to main menu");
+
+	menu_add_entry(menu, (MenuEntry *) main_menu_button);
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
@@ -253,14 +257,20 @@ void ui_deinit(UI * ui)
 int ui_main_menu_run(UI * ui)
 {
 	Menu *main_menu;
+	MenuButtonEntry *connect_button;
+	MenuButtonEntry *exit_button;
 	SDL_Surface *screen = ui->screen;
 	TTF_Font *font = ui->font;
 	SDL_Rect position;
 	int selected_id = -1;
 
 	main_menu = menu_new(font, 0);
-	menu_add_entry(main_menu, MAIN_MENU_CONNECT, "Connect to drone");
-	menu_add_entry(main_menu, MAIN_MENU_EXIT, "Exit");
+	connect_button = menu_button_entry_new(MAIN_MENU_CONNECT,
+			"Connect to drone");
+	exit_button = menu_button_entry_new(MAIN_MENU_EXIT, "Exit");
+
+	menu_add_entry(main_menu, (MenuEntry *) connect_button);
+	menu_add_entry(main_menu, (MenuEntry *) exit_button);
 
 	/* center position in screen */
 	position.x = (screen->w - menu_get_width(main_menu)) / 2;
