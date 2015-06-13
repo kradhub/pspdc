@@ -40,6 +40,9 @@ extern int running;
 
 unsigned int __attribute__((aligned(16))) list[4096];
 
+#define EVENT_BUTTON_DOWN(latch, button) \
+	(((latch)->uiPress & (button)) && ((latch)->uiMake & (button)))
+
 enum {
 	FLIGHT_MENU_QUIT = 0,
 	FLIGHT_MENU_HULL_SWITCH = 1,
@@ -505,22 +508,19 @@ ui_flight_run(UI * ui, Drone * drone)
 			(drone->state == DRONE_STATE_FLYING);
 
 		/* Check triangle and circle transition */
-		if ((latch.uiPress & PSP_CTRL_TRIANGLE) &&
-				(latch.uiMake & PSP_CTRL_TRIANGLE)) {
+		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_TRIANGLE)) {
 			if (is_flying)
 				drone_landing (drone);
 			else
 				drone_takeoff (drone);
 		}
 
-		if ((latch.uiPress & PSP_CTRL_CIRCLE) &&
-				(latch.uiMake & PSP_CTRL_CIRCLE)) {
+		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_CIRCLE)) {
 			drone_emergency (drone);
 			is_flying = 0;
 		}
 
-		if ((latch.uiPress & PSP_CTRL_START) &&
-				(latch.uiMake & PSP_CTRL_START)) {
+		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_START)) {
 			if (ui_flight_menu(ui, drone) == FLIGHT_MENU_QUIT) {
 				ret = FLIGHT_UI_MAIN_MENU;
 				break;
