@@ -285,6 +285,8 @@ int ui_main_menu_run(UI * ui)
 	SDL_Surface *screen = ui->screen;
 	TTF_Font *font = ui->font;
 	SDL_Rect position;
+	SDL_Surface *frame;
+	SDL_Rect menu_frame;
 	int selected_id = -1;
 
 	main_menu = menu_new(font, 0);
@@ -299,6 +301,16 @@ int ui_main_menu_run(UI * ui)
 	position.x = (screen->w - menu_get_width(main_menu)) / 2;
 	position.y = (screen->h - menu_get_height(main_menu)) / 2;
 
+	/* delimitate menu with a black rectangle */
+	menu_frame.x = position.x - 5;
+	menu_frame.y = position.y - 5;
+	menu_frame.w = menu_get_width(main_menu) + 10;
+	menu_frame.h = menu_get_height(main_menu) + 10;
+	frame = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
+	SDL_FillRect(frame, NULL, SDL_MapRGB(frame->format, 0, 0, 0));
+	SDL_SetAlpha(frame, SDL_SRCALPHA, 200);
+
 	while (running) {
 		switch (menu_update(main_menu)) {
 			case MENU_STATE_CLOSE:
@@ -306,8 +318,10 @@ int ui_main_menu_run(UI * ui)
 				goto done;
 				break;
 			default:
-				SDL_FillRect(screen, NULL,
-						SDL_MapRGB(screen->format, 0, 0, 0));
+				/* update screen */
+				SDL_FillRect (ui->screen, NULL,
+						SDL_MapRGB(ui->screen->format, 28, 142, 207));
+				SDL_BlitSurface(frame, NULL, screen, &menu_frame);
 				menu_render_to(main_menu, screen, &position);
 				sceDisplayWaitVblankStart();
 				SDL_Flip(screen);
@@ -316,6 +330,7 @@ int ui_main_menu_run(UI * ui)
 	}
 
 done:
+	SDL_FreeSurface(frame);
 	menu_free(main_menu);
 	return selected_id;
 }
