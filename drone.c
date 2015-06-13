@@ -29,6 +29,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
+#include <math.h>
 
 #include <libARDiscovery/ARDiscovery.h>
 #include <libARCommands/ARCommands.h>
@@ -297,6 +298,14 @@ on_hull_changed (uint8_t present, void * userdata)
 	drone->hull = present;
 }
 
+static void
+on_altitude_changed (double altitude, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	drone->altitude = (int) round(altitude);
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -360,6 +369,8 @@ drone_init(Drone * drone)
 			on_flying_state_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateHullProtectionChangedCallback (
 			on_hull_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingStateAltitudeChangedCallback (
+			on_altitude_changed, drone);
 
 	return 0;
 }

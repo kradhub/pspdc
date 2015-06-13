@@ -64,6 +64,7 @@ struct _drone
 	DroneState state;
 	unsigned int battery;
 	unsigned int hull;
+	int altitude;
 };
 
 int drone_init (Drone * drone);

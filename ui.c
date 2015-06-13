@@ -148,6 +148,39 @@ blit_failed:
 }
 
 static int
+ui_flight_altitude_update (UI * ui, int altitude)
+{
+	SDL_Surface *text;
+	SDL_Rect position;
+	char str[20];
+
+	snprintf(str, 20, "altitude: %d", altitude);
+	str[20] = 0;
+
+	text = TTF_RenderText_Blended(ui->font, str, color_white);
+	if (text == NULL)
+		goto no_text;
+
+	/* position altitude at the top center */
+	position.x = (ui->screen->w - text->w) / 2;
+	position.y = 0;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	SDL_FreeSurface(text);
+	return 0;
+
+no_text:
+	PSPLOG_ERROR("failed to render text");
+	return -1;
+
+blit_failed:
+	PSPLOG_ERROR("failed to blit text to screen");
+	return -1;
+}
+
+static int
 ui_flight_update(UI * ui, Drone * drone)
 {
 	SDL_Rect top_bar;
@@ -167,6 +200,7 @@ ui_flight_update(UI * ui, Drone * drone)
 
 	ret = ui_flight_battery_update (ui, drone->battery);
 	ret = ui_flight_state_update (ui, drone->state);
+	ret = ui_flight_altitude_update (ui, drone->altitude);
 
 	sceDisplayWaitVblankStart();
 	SDL_Flip(ui->screen);
