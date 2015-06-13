@@ -43,6 +43,7 @@ unsigned int __attribute__((aligned(16))) list[4096];
 enum {
 	FLIGHT_MENU_QUIT = 0,
 	FLIGHT_MENU_HULL_SWITCH = 1,
+	FLIGHT_MENU_FLAT_TRIM
 };
 
 static int
@@ -198,6 +199,16 @@ ui_flight_menu(UI * ui, Drone * drone)
 	main_menu_button = menu_button_entry_new(FLIGHT_MENU_QUIT,
 			"Return to main menu");
 
+	/* button to do flat trim */
+	{
+		MenuButtonEntry *button;
+
+		button = menu_button_entry_new(FLIGHT_MENU_FLAT_TRIM,
+				"do flat trim");
+		menu_add_entry(menu, (MenuEntry *) button);
+	}
+
+	/* hull presence selection */
 	hull_switch = menu_switch_entry_new(FLIGHT_MENU_HULL_SWITCH,
 			"Hull set");
 	menu_switch_entry_set_values_labels(hull_switch, "no", "yes");
@@ -248,6 +259,16 @@ ui_flight_menu(UI * ui, Drone * drone)
 
 		}
 	}
+
+	switch (selected_id) {
+		case FLIGHT_MENU_FLAT_TRIM:
+			drone_flat_trim(drone);
+			break;
+
+		default:
+			break;
+	}
+
 
 done:
 	menu_free(menu);
@@ -471,10 +492,6 @@ ui_flight_run(UI * ui, Drone * drone)
 				break;
 			}
 		}
-
-		if ((latch.uiPress & PSP_CTRL_SELECT) &&
-				(latch.uiMake & PSP_CTRL_SELECT))
-			drone_flat_trim (drone);
 
 		/* Send flight control */
 		if (pad.Buttons != 0) {
