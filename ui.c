@@ -190,6 +190,8 @@ ui_flight_menu(UI * ui, Drone * drone)
 	MenuButtonEntry *main_menu_button;
 	MenuSwitchEntry *hull_switch;
 	SDL_Rect position;
+	SDL_Surface *frame;
+	SDL_Rect menu_frame;
 	int selected_id = -1;
 
 	menu = menu_new(ui->font, MENU_CANCEL_ON_START);
@@ -210,6 +212,16 @@ ui_flight_menu(UI * ui, Drone * drone)
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
 	position.y = (ui->screen->h - menu_get_height(menu)) / 2;
 
+	/* to fill a rectangle in background to delimitate menu */
+	menu_frame.x = position.x - 5;
+	menu_frame.y = position.y - 5;
+	menu_frame.w = menu_get_width(menu) + 10;
+	menu_frame.h = menu_get_height(menu) + 10;
+	frame = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
+	SDL_FillRect(frame, NULL, SDL_MapRGB(frame->format, 0, 0, 0));
+	SDL_SetAlpha(frame, SDL_SRCALPHA, 200);
+
 	while (running) {
 		switch (menu_update(menu)) {
 			case MENU_STATE_CLOSE:
@@ -221,6 +233,9 @@ ui_flight_menu(UI * ui, Drone * drone)
 				/* sync option with drone */
 				menu_switch_entry_set_active(hull_switch,
 						drone->hull);
+
+				SDL_BlitSurface(frame, NULL, ui->screen,
+						&menu_frame);
 				menu_render_to(menu, ui->screen, &position);
 				sceDisplayWaitVblankStart();
 				SDL_Flip(ui->screen);
