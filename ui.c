@@ -160,7 +160,7 @@ ui_flight_update(UI * ui, Drone * drone)
 	/* draw top bar */
 	top_bar.x = 0;
 	top_bar.y = 0;
-	top_bar.w = 480;
+	top_bar.w = ui->screen->w;
 	top_bar.h = 20;
 	SDL_FillRect (ui->screen, &top_bar,
 			SDL_MapRGB(ui->screen->format, 0, 0, 0));
