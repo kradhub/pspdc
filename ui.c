@@ -572,7 +572,9 @@ ui_flight_run(UI * ui, Drone * drone)
 			if (pad.Buttons & PSP_CTRL_RIGHT)
 				roll += 50;
 		}
-		drone_flight_control (drone, gaz, yaw, pitch, roll);
+
+		if (gaz || yaw || pitch || roll)
+			drone_flight_control (drone, gaz, yaw, pitch, roll);
 	}
 
 	return ret;
