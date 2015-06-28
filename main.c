@@ -211,6 +211,8 @@ main_menu:
 	drone_connect(&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
 			DRONE_C2D_PORT, DRONE_D2C_PORT);
 
+	drone_sync_state(&drone);
+
 	ret = ui_flight_run(&ui, &drone);
 
 	drone_disconnect(&drone);

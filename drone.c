@@ -573,6 +573,26 @@ drone_disconnect (Drone * drone)
 	return 0;
 }
 
+int drone_sync_state (Drone * drone)
+{
+	eARCOMMANDS_GENERATOR_ERROR cmd_error;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t cmd_size;
+
+	cmd_error = ARCOMMANDS_Generator_GenerateCommonCommonAllStates (cmd,
+			COMMAND_BUFFER_SIZE, &cmd_size);
+	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate sync state");
+		return -1;
+	}
+
+	PSPLOG_DEBUG("send sync state");
+	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
 int drone_flat_trim (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;

@@ -82,6 +82,8 @@ int drone_landing (Drone * drone);
 
 int drone_flat_trim (Drone * drone);
 
+int drone_sync_state (Drone * drone);
+
 /* piloting commands */
 int drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll);
 
