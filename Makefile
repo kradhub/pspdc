@@ -1,4 +1,4 @@
-TARGET = psppflight
+TARGET = pspdc
 OBJS = main.o psplog.o drone.o
 
 CFLAGS = -g -O2 -G0 -Wall -Wextra
