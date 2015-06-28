@@ -46,6 +46,7 @@ unsigned int __attribute__((aligned(16))) list[4096];
 enum {
 	FLIGHT_MENU_QUIT = 0,
 	FLIGHT_MENU_HULL_SWITCH = 1,
+	FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
 	FLIGHT_MENU_FLAT_TRIM
 };
 
@@ -221,12 +222,23 @@ on_hull_switch_toggle(MenuSwitchEntry * entry, void * userdata)
 		drone_hull_set_active(drone, value);
 }
 
+static void
+on_outdoor_flight_switch_toggle(MenuSwitchEntry * entry, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+	int value = menu_switch_entry_get_active(entry);
+
+	if (value != drone->outdoor)
+		drone_outdoor_flight_set_active(drone, value);
+}
+
 static int
 ui_flight_menu(UI * ui, Drone * drone)
 {
 	Menu *menu;
 	MenuButtonEntry *main_menu_button;
 	MenuSwitchEntry *hull_switch;
+	MenuSwitchEntry *outdoor_flight_switch;
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
@@ -253,7 +265,16 @@ ui_flight_menu(UI * ui, Drone * drone)
 	menu_switch_entry_set_toggled_callback(hull_switch,
 			on_hull_switch_toggle, drone);
 
+	outdoor_flight_switch =
+		menu_switch_entry_new(FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
+				"outdoor flight");
+	menu_switch_entry_set_values_labels(outdoor_flight_switch, "no", "yes");
+	menu_switch_entry_set_active(outdoor_flight_switch, drone->outdoor);
+	menu_switch_entry_set_toggled_callback(outdoor_flight_switch,
+			on_outdoor_flight_switch_toggle, drone);
+
 	menu_add_entry(menu, (MenuEntry *) hull_switch);
+	menu_add_entry(menu, (MenuEntry *) outdoor_flight_switch);
 	menu_add_entry(menu, (MenuEntry *) main_menu_button);
 
 	/* center position in screen */
@@ -281,6 +302,8 @@ ui_flight_menu(UI * ui, Drone * drone)
 				/* sync option with drone */
 				menu_switch_entry_set_active(hull_switch,
 						drone->hull);
+				menu_switch_entry_set_active(outdoor_flight_switch,
+						drone->outdoor);
 
 				SDL_BlitSurface(frame, NULL, ui->screen,
 						&menu_frame);
