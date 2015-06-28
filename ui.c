@@ -161,7 +161,7 @@ ui_flight_altitude_update (UI * ui, int altitude)
 	char str[20];
 
 	snprintf(str, 20, "altitude: %d", altitude);
-	str[20] = 0;
+	str[19] = 0;
 
 	text = TTF_RenderText_Blended(ui->font, str, color_white);
 	if (text == NULL)
