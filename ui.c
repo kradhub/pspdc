@@ -587,6 +587,9 @@ ui_flight_run(UI * ui, Drone * drone)
 			is_flying = 0;
 		}
 
+		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_SELECT))
+			drone_do_flip(drone, DRONE_FLIP_FRONT);
+
 		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_START)) {
 			if (ui_flight_menu(ui, drone) == FLIGHT_MENU_QUIT) {
 				ret = FLIGHT_UI_MAIN_MENU;

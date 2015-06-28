@@ -40,6 +40,13 @@ typedef enum {
 	DRONE_STATE_EMERGENCY
 } DroneState;
 
+typedef enum {
+	DRONE_FLIP_FRONT = 0,
+	DRONE_FLIP_BACK,
+	DRONE_FLIP_RIGHT,
+	DRONE_FLIP_LEFT
+} DroneFlip;
+
 typedef struct _drone Drone;
 
 struct _drone
@@ -87,6 +94,7 @@ int drone_sync_state (Drone * drone);
 
 /* piloting commands */
 int drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll);
+int drone_do_flip (Drone * drone, DroneFlip flip);
 
 /* settings commands */
 int drone_hull_set_active (Drone * drone, int active);

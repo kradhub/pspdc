@@ -790,3 +790,43 @@ drone_absolute_control_set_active (Drone * drone, int active)
 
 	return 0;
 }
+
+int
+drone_do_flip (Drone * drone, DroneFlip flip)
+{
+	eARCOMMANDS_GENERATOR_ERROR cmd_error;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t cmd_size;
+	eARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION dir;
+
+	switch (flip) {
+		case DRONE_FLIP_FRONT:
+			dir = ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_FRONT;
+			break;
+		case DRONE_FLIP_BACK:
+			dir = ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_BACK;
+			break;
+		case DRONE_FLIP_LEFT:
+			dir = ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_LEFT;
+			break;
+		case DRONE_FLIP_RIGHT:
+			dir = ARCOMMANDS_ARDRONE3_ANIMATIONS_FLIP_DIRECTION_RIGHT;
+			break;
+		default:
+			return -1;
+			break;
+	}
+
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3AnimationsFlip(
+			cmd, COMMAND_BUFFER_SIZE, &cmd_size, dir);
+	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR("failed to generate flip command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG("send flip: %d", flip);
+	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
