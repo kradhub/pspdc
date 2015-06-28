@@ -393,6 +393,57 @@ _on_network_disconnected (ARNETWORK_Manager_t * net,
 	PSPLOG_INFO ("on_network_disconnected called");
 }
 
+static int
+drone_set_datetime (Drone * drone, time_t time)
+{
+	eARCOMMANDS_GENERATOR_ERROR cmd_error;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t cmd_size;
+	struct tm *tm;
+	char tmp[255];
+
+	tm = localtime (&time);
+	if (tm == NULL) {
+		PSPLOG_ERROR ("failed to get localtime");
+		return -1;
+	}
+
+	if (strftime(tmp, sizeof(tmp), "%F", tm) == 0) {
+		PSPLOG_ERROR ("failed to format time to string");
+		return -1;
+	}
+
+	cmd_error = ARCOMMANDS_Generator_GenerateCommonCommonCurrentDate (cmd,
+			COMMAND_BUFFER_SIZE, &cmd_size, tmp);
+	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate date command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG("send date command");
+	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
+
+	if (strftime(tmp, sizeof(tmp), "%T%z", tm) == 0) {
+		PSPLOG_ERROR ("failed to format time to string");
+		return -1;
+	}
+
+	cmd_error = ARCOMMANDS_Generator_GenerateCommonCommonCurrentTime (cmd,
+			COMMAND_BUFFER_SIZE, &cmd_size, tmp);
+	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate time command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG("send time command");
+	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+
 /* Drone API */
 int
 drone_init(Drone * drone)
@@ -500,6 +551,8 @@ drone_connect(Drone * drone, const char * ipv4, int discovery_port,
 		goto create_thread_failed;
 
 	PSPLOG_INFO ("connected to drone %s", drone->ipv4_addr);
+
+	drone_set_datetime (drone, time (NULL));
 
 	return 0;
 
