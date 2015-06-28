@@ -67,6 +67,7 @@ struct _drone
 	int altitude;
 	unsigned int outdoor;
 	unsigned int autotakeoff;
+	unsigned int abs_control;
 };
 
 int drone_init (Drone * drone);
@@ -91,5 +92,6 @@ int drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll);
 int drone_hull_set_active (Drone * drone, int active);
 int drone_outdoor_flight_set_active (Drone * drone, int active);
 int drone_autotakeoff_set_active (Drone * drone, int active);
+int drone_absolute_control_set_active (Drone * drone, int active);
 
 #endif
