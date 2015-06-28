@@ -75,6 +75,10 @@ struct _drone
 	unsigned int outdoor;
 	unsigned int autotakeoff;
 	unsigned int abs_control;
+	unsigned int gps_fixed;
+	double gps_latitude;
+	double gps_longitude;
+	double gps_altitude;
 };
 
 int drone_init (Drone * drone);

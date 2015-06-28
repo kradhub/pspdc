@@ -186,6 +186,87 @@ blit_failed:
 	return -1;
 }
 
+#define BUFFER_LEN 255
+
+static SDL_Surface *
+ui_render_text(UI * ui, const SDL_Color * color, const char *fmt, ...)
+{
+	va_list ap;
+	char buf[BUFFER_LEN] = { 0, };
+
+	va_start(ap, fmt);
+	vsnprintf(buf, BUFFER_LEN, fmt, ap);
+	va_end(ap);
+	buf[BUFFER_LEN - 1] = 0;
+
+	return TTF_RenderText_Blended(ui->font, buf, *color);
+}
+
+static int
+ui_flight_gps_update (UI * ui, Drone * drone)
+{
+	SDL_Surface *text;
+	SDL_Rect position;
+
+	text = ui_render_text(ui, &color_black, "gps: %s", drone->gps_fixed ?
+			"yes" : "no");
+	if (text == NULL)
+		goto no_text;
+
+	/* position gps at the top-left of the screen, below top bar */
+	position.x = 0;
+	position.y = 20;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	position.y += position.h;
+	SDL_FreeSurface(text);
+
+	text = ui_render_text(ui, &color_black, "latitude: %lf",
+			drone->gps_latitude);
+	if (text == NULL)
+		goto no_text;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	position.y += position.h;
+	SDL_FreeSurface(text);
+
+	text = ui_render_text(ui, &color_black, "longitude: %lf",
+			drone->gps_longitude);
+	if (text == NULL)
+		goto no_text;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	position.y += position.h;
+	SDL_FreeSurface(text);
+
+	text = ui_render_text(ui, &color_black, "altitude: %lf",
+			drone->gps_altitude);
+	if (text == NULL)
+		goto no_text;
+
+	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+		goto blit_failed;
+
+	position.y += position.h;
+	SDL_FreeSurface(text);
+
+	return 0;
+
+no_text:
+	PSPLOG_ERROR("failed to render text");
+	return -1;
+
+blit_failed:
+	PSPLOG_ERROR("failed to blit text to screen");
+	SDL_FreeSurface(text);
+	return -1;
+}
 static int
 ui_flight_update(UI * ui, Drone * drone)
 {
@@ -207,6 +288,7 @@ ui_flight_update(UI * ui, Drone * drone)
 	ret = ui_flight_battery_update (ui, drone->battery);
 	ret = ui_flight_state_update (ui, drone->state);
 	ret = ui_flight_altitude_update (ui, drone->altitude);
+	ret = ui_flight_gps_update (ui, drone);
 
 	sceDisplayWaitVblankStart();
 	SDL_Flip(ui->screen);

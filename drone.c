@@ -330,6 +330,25 @@ on_absolute_control_changed (uint8_t active, void * userdata)
 	drone->abs_control = active;
 }
 
+static void
+on_gps_fixed_changed (uint8_t gps_fixed, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	drone->gps_fixed = gps_fixed;
+}
+
+static void
+on_position_changed (double latitude, double longitude, double altitude,
+		void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	drone->gps_latitude = latitude;
+	drone->gps_longitude = longitude;
+	drone->gps_altitude = altitude;
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -401,6 +420,10 @@ drone_init(Drone * drone)
 			on_autotakeoff_mode_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateAbsolutControlChangedCallback (
 			on_absolute_control_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3GPSSettingsStateGPSFixStateChangedCallback (
+			on_gps_fixed_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingStatePositionChangedCallback (
+			on_position_changed, drone);
 
 	return 0;
 }
