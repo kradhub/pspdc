@@ -576,9 +576,9 @@ ui_flight_run(UI * ui, Drone * drone)
 		/* Send flight control */
 		if (pad.Buttons != 0) {
 			if (pad.Buttons & PSP_CTRL_CROSS)
-				gaz += 50;
+				gaz += 75;
 			if (pad.Buttons & PSP_CTRL_SQUARE)
-				gaz -= 50;
+				gaz -= 75;
 
 			if (pad.Buttons & PSP_CTRL_LTRIGGER)
 				yaw -= 50;
