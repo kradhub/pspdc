@@ -681,6 +681,27 @@ drone_sync_state (Drone * drone)
 }
 
 int
+drone_sync_settings (Drone * drone)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t cmd_size;
+
+	err = ARCOMMANDS_Generator_GenerateCommonSettingsAllSettings (cmd,
+			COMMAND_BUFFER_SIZE, &cmd_size);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate sync settings");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send sync settings");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+int
 drone_flat_trim (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;

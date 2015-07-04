@@ -220,6 +220,7 @@ main_menu:
 			DRONE_C2D_PORT, DRONE_D2C_PORT);
 
 	drone_sync_state (&drone);
+	drone_sync_settings (&drone);
 
 	ret = ui_flight_run (&ui, &drone);
 
