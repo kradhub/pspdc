@@ -62,7 +62,7 @@ on_app_exit (int arg1, int arg2, void *common)
 	return 0;
 }
 
-int
+static int
 callback_thread (SceSize args, void *argp)
 {
 	int callback_id;
@@ -76,7 +76,7 @@ callback_thread (SceSize args, void *argp)
 	return 0;
 }
 
-int
+static int
 setup_callback (void)
 {
 	int thread_id;
@@ -127,7 +127,7 @@ network_deinit (void)
 	sceNetTerm();
 }
 
-int
+static int
 init_subsystem (void)
 {
 	PSPLOG_DEBUG ("loading net module");
@@ -164,7 +164,7 @@ ttf_init_failed:
 	return -1;
 }
 
-void
+static void
 deinit_subsystem (void)
 {
 	TTF_Quit ();
