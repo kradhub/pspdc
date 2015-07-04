@@ -349,6 +349,22 @@ on_position_changed (double latitude, double longitude, double altitude,
 	drone->gps_altitude = altitude;
 }
 
+static void
+on_product_version_changed (char * software, char * hardware, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	if (drone->software_version)
+		free (drone->software_version);
+
+	drone->software_version = strdup (software);
+
+	if (drone->hardware_version)
+		free (drone->hardware_version);
+
+	drone->hardware_version = strdup (hardware);
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -457,24 +473,33 @@ drone_init (Drone * drone)
 		return -1;
 	}
 
+	/* general state callback */
+	ARCOMMANDS_Decoder_SetCommonSettingsStateProductVersionChangedCallback (
+			on_product_version_changed, drone);
 	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
 			on_battery_status_changed, drone);
+
+	/* piloting */
 	ARCOMMANDS_Decoder_SetARDrone3PilotingStateFlyingStateChangedCallback (
 			on_flying_state_changed, drone);
-	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateHullProtectionChangedCallback (
-			on_hull_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingStateAltitudeChangedCallback (
 			on_altitude_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingStatePositionChangedCallback (
+			on_position_changed, drone);
+
+	/* piloting settings */
+	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateHullProtectionChangedCallback (
+			on_hull_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateOutdoorChangedCallback (
 			on_outdoor_flight_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingStateAutoTakeOffModeChangedCallback (
 			on_autotakeoff_mode_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateAbsolutControlChangedCallback (
 			on_absolute_control_changed, drone);
+
+	/* GPS callback */
 	ARCOMMANDS_Decoder_SetARDrone3GPSSettingsStateGPSFixStateChangedCallback (
 			on_gps_fixed_changed, drone);
-	ARCOMMANDS_Decoder_SetARDrone3PilotingStatePositionChangedCallback (
-			on_position_changed, drone);
 
 	return 0;
 }
@@ -489,6 +514,12 @@ drone_deinit (Drone * drone)
 		ARNETWORKAL_Manager_Delete (&drone->net_al);
 		drone->net_al = NULL;
 	}
+
+	if (drone->software_version)
+		free (drone->software_version);
+
+	if (drone->hardware_version)
+		free (drone->hardware_version);
 }
 
 int

@@ -57,6 +57,11 @@ struct _MenuEntry
 	int (*render) (MenuEntry * entry, TTF_Font * font, const SDL_Color * color);
 };
 
+struct _MenuLabelEntry
+{
+	MenuEntry parent;
+};
+
 struct _MenuButtonEntry
 {
 	MenuEntry parent;
@@ -248,18 +253,27 @@ menu_update (Menu * menu)
 	if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_DOWN))
 		menu_select_next_entry (menu);
 
-	if (entry->type == MENU_ENTRY_TYPE_BUTTON) {
-		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_CROSS))
-			state = MENU_STATE_CLOSE;
-	} else if (entry->type == MENU_ENTRY_TYPE_SWITCH) {
-		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_LEFT) ||
-				EVENT_BUTTON_DOWN (&latch, PSP_CTRL_RIGHT)) {
+	switch (entry->type) {
+		case MENU_ENTRY_TYPE_BUTTON:
+			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_CROSS))
+				state = MENU_STATE_CLOSE;
+			break;
+
+		case MENU_ENTRY_TYPE_SWITCH:
+			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_LEFT) ||
+					EVENT_BUTTON_DOWN (&latch, PSP_CTRL_RIGHT)) {
 			menu_switch_entry_toggle ((MenuSwitchEntry *) entry);
 
 			/* re-render to reflect change */
 			menu_entry_render (entry, menu->font,
 					&menu->selected_color);
-		}
+			}
+			break;
+
+		case MENU_ENTRY_TYPE_LABEL:
+		default:
+			break;
+
 	}
 
 	if ((menu->options & MENU_CANCEL_ON_START) &&
@@ -453,6 +467,24 @@ MenuEntryType
 menu_entry_get_type (MenuEntry * entry)
 {
 	return entry->type;
+}
+
+/**
+ * MenuLabelEntry API implementation
+ */
+MenuLabelEntry *
+menu_label_entry_new (int id, const char * label)
+{
+	MenuLabelEntry *entry;
+
+	entry = malloc(sizeof(MenuButtonEntry));
+	if (!entry)
+		return NULL;
+
+	menu_entry_init (&entry->parent, MENU_ENTRY_TYPE_LABEL, id, label,
+			NULL);
+
+	return entry;
 }
 
 /**

@@ -50,7 +50,9 @@ enum
 	FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
 	FLIGHT_MENU_AUTOTAKEOFF_SWITCH,
 	FLIGHT_MENU_ABSOLUTE_CONTROL_SWITCH,
-	FLIGHT_MENU_FLAT_TRIM
+	FLIGHT_MENU_FLAT_TRIM,
+	FLIGHT_MENU_SW_VERSION,
+	FLIGHT_MENU_HW_VERSION,
 };
 
 static int
@@ -399,6 +401,23 @@ ui_flight_menu (UI * ui, Drone * drone)
 	menu_add_entry (menu, (MenuEntry *) autotakeoff_switch);
 	menu_add_entry (menu, (MenuEntry *) absolute_control_switch);
 	menu_add_entry (menu, (MenuEntry *) main_menu_button);
+
+	{
+		MenuLabelEntry *sw;
+		MenuLabelEntry *hw;
+		char tmp[128] = { 0, };
+
+		snprintf (tmp, 127, "Drone SW: %s", drone->software_version);
+		sw = menu_label_entry_new (FLIGHT_MENU_SW_VERSION,
+				tmp);
+
+		snprintf (tmp, 127, "Drone HW: %s", drone->hardware_version);
+		hw = menu_label_entry_new (FLIGHT_MENU_HW_VERSION,
+				tmp);
+
+		menu_add_entry (menu, (MenuEntry *) sw);
+		menu_add_entry (menu, (MenuEntry *) hw);
+	}
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;

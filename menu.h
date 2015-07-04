@@ -43,12 +43,14 @@ typedef enum
 typedef enum
 {
 	MENU_ENTRY_TYPE_BASE = 0,
+	MENU_ENTRY_TYPE_LABEL,
 	MENU_ENTRY_TYPE_BUTTON,
 	MENU_ENTRY_TYPE_SWITCH
 } MenuEntryType;
 
 typedef struct _Menu Menu;
 typedef struct _MenuEntry MenuEntry;
+typedef struct _MenuLabelEntry MenuLabelEntry;
 typedef struct _MenuButtonEntry MenuButtonEntry;
 typedef struct _MenuSwitchEntry MenuSwitchEntry;
 
@@ -77,6 +79,9 @@ void menu_render_to (Menu * menu, SDL_Surface * dest, const SDL_Rect * position)
 /* MenuEntry API */
 void menu_entry_free (MenuEntry * entry);
 MenuEntryType menu_entry_get_type (MenuEntry * entry);
+
+/* MenuLabelEntry API */
+MenuLabelEntry *menu_label_entry_new (int id, const char * label);
 
 /* MenuButtonEntry API */
 MenuButtonEntry *menu_button_entry_new (int id, const char * title);

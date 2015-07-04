@@ -81,6 +81,8 @@ struct _drone
 	double gps_latitude;
 	double gps_longitude;
 	double gps_altitude;
+	char *software_version;
+	char *hardware_version;
 };
 
 int drone_init (Drone * drone);
