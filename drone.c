@@ -446,7 +446,7 @@ drone_set_datetime (Drone * drone, time_t time)
 
 /* Drone API */
 int
-drone_init(Drone * drone)
+drone_init (Drone * drone)
 {
 	eARNETWORKAL_ERROR net_al_error = ARNETWORKAL_OK;
 	memset (drone, 0, sizeof (*drone));
@@ -492,7 +492,7 @@ drone_deinit (Drone * drone)
 }
 
 int
-drone_connect(Drone * drone, const char * ipv4, int discovery_port,
+drone_connect (Drone * drone, const char * ipv4, int discovery_port,
 		int c2d_port, int d2c_port)
 {
 	int ret;
@@ -659,7 +659,8 @@ drone_disconnect (Drone * drone)
 	return 0;
 }
 
-int drone_sync_state (Drone * drone)
+int
+drone_sync_state (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
@@ -672,14 +673,15 @@ int drone_sync_state (Drone * drone)
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send sync state");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send sync state");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
 }
 
-int drone_flat_trim (Drone * drone)
+int
+drone_flat_trim (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
@@ -692,49 +694,50 @@ int drone_flat_trim (Drone * drone)
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send flat trim");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
-			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
-
-	return 0;
-}
-
-int drone_emergency(Drone * drone)
-{
-	eARCOMMANDS_GENERATOR_ERROR cmd_error;
-	uint8_t cmd[COMMAND_BUFFER_SIZE];
-	int32_t cmd_size;
-
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingEmergency(cmd,
-			COMMAND_BUFFER_SIZE, &cmd_size);
-	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate emergency command");
-		return -1;
-	}
-
-	PSPLOG_DEBUG("send emergency");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_EMERGENCY_ID,
+	PSPLOG_DEBUG ("send flat trim");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
 }
 
 int
-drone_takeoff(Drone * drone)
+drone_emergency (Drone * drone)
 {
 	eARCOMMANDS_GENERATOR_ERROR cmd_error;
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingTakeOff(cmd,
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingEmergency (cmd,
 			COMMAND_BUFFER_SIZE, &cmd_size);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate takeoff command");
+		PSPLOG_ERROR ("failed to generate emergency command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send takeoff");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send emergency");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_EMERGENCY_ID,
+			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+int
+drone_takeoff (Drone * drone)
+{
+	eARCOMMANDS_GENERATOR_ERROR cmd_error;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t cmd_size;
+
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingTakeOff (cmd,
+			COMMAND_BUFFER_SIZE, &cmd_size);
+	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate takeoff command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send takeoff");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -747,15 +750,15 @@ drone_landing (Drone * drone)
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingLanding(cmd,
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingLanding (cmd,
 			COMMAND_BUFFER_SIZE, &cmd_size);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate landing command");
+		PSPLOG_ERROR ("failed to generate landing command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send landing");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send landing");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -768,16 +771,16 @@ drone_flight_control (Drone * drone, int gaz, int yaw, int pitch, int roll)
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingPCMD(cmd,
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingPCMD (cmd,
 			COMMAND_BUFFER_SIZE, &cmd_size, 1, roll, pitch, yaw,
 			gaz, 0);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate flight control command");
+		PSPLOG_ERROR ("failed to generate flight control command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send flight control parameters");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_NO_ACK_ID,
+	PSPLOG_DEBUG ("send flight control parameters");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_NO_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -790,15 +793,15 @@ drone_hull_set_active (Drone * drone, int active)
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsHullProtection(
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsHullProtection (
 			cmd, COMMAND_BUFFER_SIZE, &cmd_size, active);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate flight control command");
+		PSPLOG_ERROR ("failed to generate flight control command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send hull presence");
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send hull presence");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -811,15 +814,15 @@ drone_outdoor_flight_set_active (Drone * drone, int active)
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsOutdoor(
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsOutdoor (
 			cmd, COMMAND_BUFFER_SIZE, &cmd_size, active);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate outdoor command");
+		PSPLOG_ERROR ("failed to generate outdoor command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send outdoor presence: %d", active);
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send outdoor presence: %d", active);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -832,15 +835,15 @@ drone_autotakeoff_set_active (Drone * drone, int active)
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsOutdoor(
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsOutdoor (
 			cmd, COMMAND_BUFFER_SIZE, &cmd_size, active);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate autotakeoff command");
+		PSPLOG_ERROR ("failed to generate autotakeoff command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send autotakeoff presence: %d", active);
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send autotakeoff presence: %d", active);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -853,15 +856,15 @@ drone_absolute_control_set_active (Drone * drone, int active)
 	uint8_t cmd[COMMAND_BUFFER_SIZE];
 	int32_t cmd_size;
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingSettingsAbsolutControl(
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingSettingsAbsolutControl (
 			cmd, COMMAND_BUFFER_SIZE, &cmd_size, active);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate absolute control command");
+		PSPLOG_ERROR ("failed to generate absolute control command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send absolute control: %d", active);
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send absolute control: %d", active);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;
@@ -893,15 +896,15 @@ drone_do_flip (Drone * drone, DroneFlip flip)
 			break;
 	}
 
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3AnimationsFlip(
+	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3AnimationsFlip (
 			cmd, COMMAND_BUFFER_SIZE, &cmd_size, dir);
 	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR("failed to generate flip command");
+		PSPLOG_ERROR ("failed to generate flip command");
 		return -1;
 	}
 
-	PSPLOG_DEBUG("send flip: %d", flip);
-	ARNETWORK_Manager_SendData(drone->net, DRONE_COMMAND_ACK_ID,
+	PSPLOG_DEBUG ("send flip: %d", flip);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
 	return 0;

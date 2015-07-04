@@ -40,7 +40,8 @@ typedef enum
 	MENU_STATE_CANCELLED,
 } MenuState;
 
-typedef enum {
+typedef enum
+{
 	MENU_ENTRY_TYPE_BASE = 0,
 	MENU_ENTRY_TYPE_BUTTON,
 	MENU_ENTRY_TYPE_SWITCH
@@ -53,42 +54,41 @@ typedef struct _MenuSwitchEntry MenuSwitchEntry;
 
 typedef void (*MenuSwitchEntryToggledCallback)(MenuSwitchEntry * entry, void * userdata);
 
-Menu *menu_new(TTF_Font * font, int options);
-void menu_free(Menu * menu);
+Menu *menu_new (TTF_Font * font, int options);
+void menu_free (Menu * menu);
 
-void menu_set_default_color(Menu * menu, const SDL_Color * color);
-void menu_set_selected_color(Menu * menu, const SDL_Color * color);
+void menu_set_default_color (Menu * menu, const SDL_Color * color);
+void menu_set_selected_color (Menu * menu, const SDL_Color * color);
 
-int menu_get_width(Menu * menu);
-int menu_get_height(Menu * menu);
-int menu_get_selected_id(Menu * menu);
+int menu_get_width (Menu * menu);
+int menu_get_height (Menu * menu);
+int menu_get_selected_id (Menu * menu);
 
-int menu_add_entry(Menu * menu, MenuEntry * entry);
-void menu_remove_entry(Menu * menu, MenuEntry * entry);
+int menu_add_entry (Menu * menu, MenuEntry * entry);
+void menu_remove_entry (Menu * menu, MenuEntry * entry);
 
-int menu_select_entry(Menu * menu, MenuEntry * entry);
-int menu_select_prev_entry(Menu * menu);
-int menu_select_next_entry(Menu * menu);
+int menu_select_entry (Menu * menu, MenuEntry * entry);
+int menu_select_prev_entry (Menu * menu);
+int menu_select_next_entry (Menu * menu);
 
-MenuState menu_update(Menu * menu);
-void menu_render_to(Menu * menu, SDL_Surface * dest, const SDL_Rect * position);
+MenuState menu_update (Menu * menu);
+void menu_render_to (Menu * menu, SDL_Surface * dest, const SDL_Rect * position);
 
 /* MenuEntry API */
-void menu_entry_free(MenuEntry * entry);
-MenuEntryType menu_entry_get_type(MenuEntry * entry);
+void menu_entry_free (MenuEntry * entry);
+MenuEntryType menu_entry_get_type (MenuEntry * entry);
 
 /* MenuButtonEntry API */
-MenuButtonEntry *menu_button_entry_new(int id, const char * title);
+MenuButtonEntry *menu_button_entry_new (int id, const char * title);
 
 /* MenuSwitchEntry API */
-MenuSwitchEntry *menu_switch_entry_new(int id, const char * title);
-int menu_switch_entry_get_active(MenuSwitchEntry * entry);
-void menu_switch_entry_set_active(MenuSwitchEntry * entry, int is_active);
-void menu_switch_entry_toggle(MenuSwitchEntry * entry);
-void menu_switch_entry_set_values_labels(MenuSwitchEntry * entry,
+MenuSwitchEntry *menu_switch_entry_new (int id, const char * title);
+int menu_switch_entry_get_active (MenuSwitchEntry * entry);
+void menu_switch_entry_set_active (MenuSwitchEntry * entry, int is_active);
+void menu_switch_entry_toggle (MenuSwitchEntry * entry);
+void menu_switch_entry_set_values_labels (MenuSwitchEntry * entry,
 		const char * off_label, const char * on_label);
-void menu_switch_entry_set_toggled_callback(MenuSwitchEntry * entry,
+void menu_switch_entry_set_toggled_callback (MenuSwitchEntry * entry,
 		MenuSwitchEntryToggledCallback callback, void * userdata);
-
 
 #endif

@@ -49,123 +49,131 @@
 #define DRONE_C2D_PORT 54321
 #define DRONE_D2C_PORT 43210
 
-PSP_MODULE_INFO("PSP Drone Control", PSP_MODULE_USER, 0, 1);
-PSP_MAIN_THREAD_ATTR(PSP_THREAD_ATTR_USER);
-PSP_HEAP_SIZE_MAX();
+PSP_MODULE_INFO ("PSP Drone Control", PSP_MODULE_USER, 0, 1);
+PSP_MAIN_THREAD_ATTR (PSP_THREAD_ATTR_USER);
+PSP_HEAP_SIZE_MAX ();
 
 int running = 1;
 
-static int on_app_exit(int arg1, int arg2, void *common)
+static int
+on_app_exit (int arg1, int arg2, void *common)
 {
 	running = 0;
 	return 0;
 }
 
-int callback_thread(SceSize args, void *argp)
+int
+callback_thread (SceSize args, void *argp)
 {
 	int callback_id;
 
-	callback_id = sceKernelCreateCallback("Exit Callback", on_app_exit,
+	callback_id = sceKernelCreateCallback ("Exit Callback", on_app_exit,
 			NULL);
-	sceKernelRegisterExitCallback(callback_id);
+	sceKernelRegisterExitCallback (callback_id);
 
-	sceKernelSleepThreadCB();
+	sceKernelSleepThreadCB ();
 
 	return 0;
 }
 
-int setup_callback()
+int
+setup_callback (void)
 {
 	int thread_id;
 
-	thread_id = sceKernelCreateThread("Callback update thread",
+	thread_id = sceKernelCreateThread ("Callback update thread",
 			callback_thread, 0x11, 0xFA0, THREAD_ATTR_USER, 0);
 
 	if (thread_id >= 0)
-		sceKernelStartThread(thread_id, 0, 0);
+		sceKernelStartThread (thread_id, 0, 0);
 
 	return thread_id;
 }
 
 
-static int network_init()
+static int
+network_init (void)
 {
-	if (sceNetInit(128 * 4096, 42, 4096, 42, 4096) < 0) {
-		PSPLOG_ERROR("failed to initialize net component");
+	if (sceNetInit (128 * 4096, 42, 4096, 42, 4096) < 0) {
+		PSPLOG_ERROR ("failed to initialize net component");
 		return -1;
 	}
 
-	if (sceNetInetInit() < 0)
+	if (sceNetInetInit () < 0)
 		goto inet_init_failed;
 
-	if (sceNetApctlInit(0x8000, 48) < 0)
+	if (sceNetApctlInit (0x8000, 48) < 0)
 		goto apctl_init_failed;
 
 	return 0;
 
 inet_init_failed:
-	PSPLOG_ERROR("failed to initialize inet");
-	sceNetTerm();
+	PSPLOG_ERROR ("failed to initialize inet");
+	sceNetTerm ();
 	return -1;
 
 apctl_init_failed:
-	PSPLOG_ERROR("failed to initialize apctl");
-	sceNetInetTerm();
-	sceNetTerm();
+	PSPLOG_ERROR ("failed to initialize apctl");
+	sceNetInetTerm ();
+	sceNetTerm ();
 	return -1;
 }
 
-static void network_deinit()
+static void
+network_deinit (void)
 {
 	sceNetApctlTerm();
 	sceNetInetTerm();
 	sceNetTerm();
 }
 
-int init_subsystem()
+int
+init_subsystem (void)
 {
-	PSPLOG_DEBUG("loading net module");
-	sceUtilityLoadNetModule(PSP_NET_MODULE_COMMON);
-	sceUtilityLoadNetModule(PSP_NET_MODULE_INET);
+	PSPLOG_DEBUG ("loading net module");
+	sceUtilityLoadNetModule (PSP_NET_MODULE_COMMON);
+	sceUtilityLoadNetModule (PSP_NET_MODULE_INET);
 
-	PSPLOG_DEBUG("initializing network stack");
-	if (network_init() < 0)
+	PSPLOG_DEBUG ("initializing network stack");
+	if (network_init () < 0)
 		goto network_init_failed;
 
-	PSPLOG_DEBUG("initializing SDL");
-	if (SDL_Init(SDL_INIT_VIDEO) < 0)
+	PSPLOG_DEBUG ("initializing SDL");
+	if (SDL_Init (SDL_INIT_VIDEO) < 0)
 		goto sdl_init_failed;
 
-	PSPLOG_DEBUG("initializing SDL_ttf");
-	if (TTF_Init() < 0)
+	PSPLOG_DEBUG ("initializing SDL_ttf");
+	if (TTF_Init () < 0)
 		goto ttf_init_failed;
 
 	return 0;
 
 network_init_failed:
-	PSPLOG_ERROR("failed to initialize network");
+	PSPLOG_ERROR ("failed to initialize network");
 	return -1;
 
 sdl_init_failed:
-	PSPLOG_ERROR("failed to initialize SDL");
-	network_deinit();
+	PSPLOG_ERROR ("failed to initialize SDL");
+	network_deinit ();
 	return -1;
 
 ttf_init_failed:
-	PSPLOG_ERROR("failed to initialize SDL_ttf");
-	SDL_Quit();
-	network_deinit();
+	PSPLOG_ERROR ("failed to initialize SDL_ttf");
+	SDL_Quit ();
+	network_deinit ();
 	return -1;
 }
 
-void deinit_subsystem()
+void
+deinit_subsystem (void)
 {
-	TTF_Quit();
-	SDL_Quit();
-	network_deinit();
+	TTF_Quit ();
+	SDL_Quit ();
+	network_deinit ();
 }
 
-int main(int argc, char *argv[])
+int
+main(int argc, char *argv[])
 {
 	Drone drone;
 	int ret;
@@ -174,22 +182,22 @@ int main(int argc, char *argv[])
 	union SceNetApctlInfo ip;
 	UI ui;
 
-	setup_callback();
+	setup_callback ();
 
-	if (psplog_init(PSPLOG_CAT_INFO, "ms0:/PSP/GAME/pspdc/log") < 0)
-		sceKernelExitGame();
+	if (psplog_init (PSPLOG_CAT_INFO, "ms0:/PSP/GAME/pspdc/log") < 0)
+		sceKernelExitGame ();
 
-	if (init_subsystem() < 0)
+	if (init_subsystem () < 0)
 		goto end;
 
-	if (ui_init(&ui, 480, 272) < 0)
+	if (ui_init (&ui, 480, 272) < 0)
 		goto end;
 
-	if (drone_init(&drone) < 0)
+	if (drone_init (&drone) < 0)
 		goto end;
 
 main_menu:
-	switch (ui_main_menu_run(&ui)) {
+	switch (ui_main_menu_run (&ui)) {
 		case MAIN_MENU_CONNECT:
 			break;
 		case MAIN_MENU_EXIT:
@@ -198,34 +206,34 @@ main_menu:
 	}
 
 	PSPLOG_DEBUG("Opening network connection dialog");
-	if (ui_network_dialog_run(&ui))
+	if (ui_network_dialog_run (&ui))
 		goto main_menu;
 
-	sceNetApctlGetInfo(PSP_NET_APCTL_INFO_SSID, &ssid);
-	sceNetApctlGetInfo(PSP_NET_APCTL_INFO_GATEWAY, &gateway);
-	sceNetApctlGetInfo(PSP_NET_APCTL_INFO_IP, &ip);
+	sceNetApctlGetInfo (PSP_NET_APCTL_INFO_SSID, &ssid);
+	sceNetApctlGetInfo (PSP_NET_APCTL_INFO_GATEWAY, &gateway);
+	sceNetApctlGetInfo (PSP_NET_APCTL_INFO_IP, &ip);
 
-	PSPLOG_INFO("connected to %s (%s)", ssid.ssid, gateway.gateway);
-	PSPLOG_INFO("get ip: %s", ip.ip);
+	PSPLOG_INFO ("connected to %s (%s)", ssid.ssid, gateway.gateway);
+	PSPLOG_INFO ("get ip: %s", ip.ip);
 
-	drone_connect(&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
+	drone_connect (&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
 			DRONE_C2D_PORT, DRONE_D2C_PORT);
 
-	drone_sync_state(&drone);
+	drone_sync_state (&drone);
 
-	ret = ui_flight_run(&ui, &drone);
+	ret = ui_flight_run (&ui, &drone);
 
-	drone_disconnect(&drone);
-	sceNetApctlDisconnect();
+	drone_disconnect (&drone);
+	sceNetApctlDisconnect ();
 
 	if (ret == FLIGHT_UI_MAIN_MENU)
 		goto main_menu;
 
 end:
-	drone_deinit(&drone);
-	ui_deinit(&ui);
-	deinit_subsystem();
-	psplog_deinit();
-	sceKernelExitGame();
+	drone_deinit (&drone);
+	ui_deinit (&ui);
+	deinit_subsystem ();
+	psplog_deinit ();
+	sceKernelExitGame ();
 	return 0;
 }

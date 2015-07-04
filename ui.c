@@ -43,7 +43,8 @@ unsigned int __attribute__((aligned(16))) list[4096];
 #define EVENT_BUTTON_DOWN(latch, button) \
 	(((latch)->uiPress & (button)) && ((latch)->uiMake & (button)))
 
-enum {
+enum
+{
 	FLIGHT_MENU_QUIT = 0,
 	FLIGHT_MENU_HULL_SWITCH = 1,
 	FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
@@ -53,7 +54,7 @@ enum {
 };
 
 static int
-ui_flight_battery_update(UI * ui, unsigned int percent)
+ui_flight_battery_update (UI * ui, unsigned int percent)
 {
 	SDL_Surface *text;
 	SDL_Rect position;
@@ -63,7 +64,7 @@ ui_flight_battery_update(UI * ui, unsigned int percent)
 	if (percent > 100)
 		return -1;
 
-	snprintf(percent_str, 5, "%u%%", percent);
+	snprintf (percent_str, 5, "%u%%", percent);
 
 	/* select color according to value */
 	if (percent < 10)
@@ -73,7 +74,7 @@ ui_flight_battery_update(UI * ui, unsigned int percent)
 	else
 		color = &color_green;
 
-	text = TTF_RenderText_Blended(ui->font, percent_str, *color);
+	text = TTF_RenderText_Blended (ui->font, percent_str, *color);
 	if (text == NULL)
 		goto no_text;
 
@@ -81,19 +82,19 @@ ui_flight_battery_update(UI * ui, unsigned int percent)
 	position.x = ui->screen->w - text->w - 5;
 	position.y = 0;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 
 	return 0;
 
 no_text:
-	PSPLOG_ERROR("failed to render text");
+	PSPLOG_ERROR ("failed to render text");
 	return -1;
 
 blit_failed:
-	PSPLOG_ERROR("failed to blit text to screen");
+	PSPLOG_ERROR ("failed to blit text to screen");
 	return -1;
 }
 
@@ -134,22 +135,22 @@ ui_flight_state_update (UI * ui, DroneState state)
 			break;
 	}
 
-	text = TTF_RenderText_Blended(ui->font, state_str, color_white);
+	text = TTF_RenderText_Blended (ui->font, state_str, color_white);
 	if (text == NULL)
 		goto no_text;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 	return 0;
 
 no_text:
-	PSPLOG_ERROR("failed to render text");
+	PSPLOG_ERROR ("failed to render text");
 	return -1;
 
 blit_failed:
-	PSPLOG_ERROR("failed to blit text to screen");
+	PSPLOG_ERROR ("failed to blit text to screen");
 	return -1;
 }
 
@@ -160,10 +161,10 @@ ui_flight_altitude_update (UI * ui, int altitude)
 	SDL_Rect position;
 	char str[20];
 
-	snprintf(str, 20, "altitude: %d", altitude);
+	snprintf (str, 20, "altitude: %d", altitude);
 	str[19] = 0;
 
-	text = TTF_RenderText_Blended(ui->font, str, color_white);
+	text = TTF_RenderText_Blended (ui->font, str, color_white);
 	if (text == NULL)
 		goto no_text;
 
@@ -171,35 +172,35 @@ ui_flight_altitude_update (UI * ui, int altitude)
 	position.x = (ui->screen->w - text->w) / 2;
 	position.y = 0;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 	return 0;
 
 no_text:
-	PSPLOG_ERROR("failed to render text");
+	PSPLOG_ERROR ("failed to render text");
 	return -1;
 
 blit_failed:
-	PSPLOG_ERROR("failed to blit text to screen");
+	PSPLOG_ERROR ("failed to blit text to screen");
 	return -1;
 }
 
 #define BUFFER_LEN 255
 
 static SDL_Surface *
-ui_render_text(UI * ui, const SDL_Color * color, const char *fmt, ...)
+ui_render_text (UI * ui, const SDL_Color * color, const char *fmt, ...)
 {
 	va_list ap;
 	char buf[BUFFER_LEN] = { 0, };
 
-	va_start(ap, fmt);
-	vsnprintf(buf, BUFFER_LEN, fmt, ap);
-	va_end(ap);
+	va_start (ap, fmt);
+	vsnprintf (buf, BUFFER_LEN, fmt, ap);
+	va_end (ap);
 	buf[BUFFER_LEN - 1] = 0;
 
-	return TTF_RenderText_Blended(ui->font, buf, *color);
+	return TTF_RenderText_Blended (ui->font, buf, *color);
 }
 
 static int
@@ -208,7 +209,7 @@ ui_flight_gps_update (UI * ui, Drone * drone)
 	SDL_Surface *text;
 	SDL_Rect position;
 
-	text = ui_render_text(ui, &color_black, "gps: %s", drone->gps_fixed ?
+	text = ui_render_text (ui, &color_black, "gps: %s", drone->gps_fixed ?
 			"yes" : "no");
 	if (text == NULL)
 		goto no_text;
@@ -217,65 +218,65 @@ ui_flight_gps_update (UI * ui, Drone * drone)
 	position.x = 0;
 	position.y = 20;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
 	position.y += position.h;
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 
-	text = ui_render_text(ui, &color_black, "latitude: %lf",
+	text = ui_render_text (ui, &color_black, "latitude: %lf",
 			drone->gps_latitude);
 	if (text == NULL)
 		goto no_text;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
 	position.y += position.h;
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 
-	text = ui_render_text(ui, &color_black, "longitude: %lf",
+	text = ui_render_text (ui, &color_black, "longitude: %lf",
 			drone->gps_longitude);
 	if (text == NULL)
 		goto no_text;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
 	position.y += position.h;
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 
-	text = ui_render_text(ui, &color_black, "altitude: %lf",
+	text = ui_render_text (ui, &color_black, "altitude: %lf",
 			drone->gps_altitude);
 	if (text == NULL)
 		goto no_text;
 
-	if (SDL_BlitSurface(text, NULL, ui->screen, &position) < 0)
+	if (SDL_BlitSurface (text, NULL, ui->screen, &position) < 0)
 		goto blit_failed;
 
 	position.y += position.h;
-	SDL_FreeSurface(text);
+	SDL_FreeSurface (text);
 
 	return 0;
 
 no_text:
-	PSPLOG_ERROR("failed to render text");
+	PSPLOG_ERROR ("failed to render text");
 	return -1;
 
 blit_failed:
-	PSPLOG_ERROR("failed to blit text to screen");
-	SDL_FreeSurface(text);
+	PSPLOG_ERROR ("failed to blit text to screen");
+	SDL_FreeSurface (text);
 	return -1;
 }
 static int
-ui_flight_update(UI * ui, Drone * drone)
+ui_flight_update (UI * ui, Drone * drone)
 {
 	SDL_Rect top_bar;
 	int ret;
 
 	/* clear screen */
 	SDL_FillRect (ui->screen, NULL,
-			SDL_MapRGB(ui->screen->format, 28, 142, 207));
+			SDL_MapRGB (ui->screen->format, 28, 142, 207));
 
 	/* draw top bar */
 	top_bar.x = 0;
@@ -290,54 +291,54 @@ ui_flight_update(UI * ui, Drone * drone)
 	ret = ui_flight_altitude_update (ui, drone->altitude);
 	ret = ui_flight_gps_update (ui, drone);
 
-	sceDisplayWaitVblankStart();
-	SDL_Flip(ui->screen);
+	sceDisplayWaitVblankStart ();
+	SDL_Flip (ui->screen);
 
 	return ret;
 }
 
 static void
-on_hull_switch_toggle(MenuSwitchEntry * entry, void * userdata)
+on_hull_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active(entry);
+	int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->hull)
-		drone_hull_set_active(drone, value);
+		drone_hull_set_active (drone, value);
 }
 
 static void
-on_outdoor_flight_switch_toggle(MenuSwitchEntry * entry, void * userdata)
+on_outdoor_flight_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active(entry);
+	int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->outdoor)
-		drone_outdoor_flight_set_active(drone, value);
+		drone_outdoor_flight_set_active (drone, value);
 }
 
 static void
-on_autotakeoff_switch_toggle(MenuSwitchEntry * entry, void * userdata)
+on_autotakeoff_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active(entry);
+	int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->autotakeoff)
-		drone_autotakeoff_set_active(drone, value);
+		drone_autotakeoff_set_active (drone, value);
 }
 
 static void
-on_absolute_control_switch_toggle(MenuSwitchEntry * entry, void * userdata)
+on_absolute_control_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active(entry);
+	int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->abs_control)
-		drone_absolute_control_set_active(drone, value);
+		drone_absolute_control_set_active (drone, value);
 }
 
 static int
-ui_flight_menu(UI * ui, Drone * drone)
+ui_flight_menu (UI * ui, Drone * drone)
 {
 	Menu *menu;
 	MenuButtonEntry *main_menu_button;
@@ -350,54 +351,54 @@ ui_flight_menu(UI * ui, Drone * drone)
 	SDL_Rect menu_frame;
 	int selected_id = -1;
 
-	menu = menu_new(ui->font, MENU_CANCEL_ON_START);
-	main_menu_button = menu_button_entry_new(FLIGHT_MENU_QUIT,
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+	main_menu_button = menu_button_entry_new (FLIGHT_MENU_QUIT,
 			"Return to main menu");
 
 	/* button to do flat trim */
 	{
 		MenuButtonEntry *button;
 
-		button = menu_button_entry_new(FLIGHT_MENU_FLAT_TRIM,
+		button = menu_button_entry_new (FLIGHT_MENU_FLAT_TRIM,
 				"do flat trim");
-		menu_add_entry(menu, (MenuEntry *) button);
+		menu_add_entry (menu, (MenuEntry *) button);
 	}
 
 	/* hull presence selection */
-	hull_switch = menu_switch_entry_new(FLIGHT_MENU_HULL_SWITCH,
+	hull_switch = menu_switch_entry_new (FLIGHT_MENU_HULL_SWITCH,
 			"Hull set");
-	menu_switch_entry_set_values_labels(hull_switch, "no", "yes");
-	menu_switch_entry_set_active(hull_switch, drone->hull);
-	menu_switch_entry_set_toggled_callback(hull_switch,
+	menu_switch_entry_set_values_labels (hull_switch, "no", "yes");
+	menu_switch_entry_set_active (hull_switch, drone->hull);
+	menu_switch_entry_set_toggled_callback (hull_switch,
 			on_hull_switch_toggle, drone);
 
 	outdoor_flight_switch =
-		menu_switch_entry_new(FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
+		menu_switch_entry_new (FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
 				"outdoor flight");
-	menu_switch_entry_set_values_labels(outdoor_flight_switch, "no", "yes");
-	menu_switch_entry_set_active(outdoor_flight_switch, drone->outdoor);
-	menu_switch_entry_set_toggled_callback(outdoor_flight_switch,
+	menu_switch_entry_set_values_labels (outdoor_flight_switch, "no", "yes");
+	menu_switch_entry_set_active (outdoor_flight_switch, drone->outdoor);
+	menu_switch_entry_set_toggled_callback (outdoor_flight_switch,
 			on_outdoor_flight_switch_toggle, drone);
 	
-	autotakeoff_switch = menu_switch_entry_new(FLIGHT_MENU_AUTOTAKEOFF_SWITCH,
+	autotakeoff_switch = menu_switch_entry_new (FLIGHT_MENU_AUTOTAKEOFF_SWITCH,
 			"Auto takeoff");
-	menu_switch_entry_set_values_labels(autotakeoff_switch, "no", "yes");
-	menu_switch_entry_set_active(autotakeoff_switch, drone->autotakeoff);
-	menu_switch_entry_set_toggled_callback(autotakeoff_switch,
+	menu_switch_entry_set_values_labels (autotakeoff_switch, "no", "yes");
+	menu_switch_entry_set_active (autotakeoff_switch, drone->autotakeoff);
+	menu_switch_entry_set_toggled_callback (autotakeoff_switch,
 			on_autotakeoff_switch_toggle, drone);
 
-	absolute_control_switch = menu_switch_entry_new(FLIGHT_MENU_ABSOLUTE_CONTROL_SWITCH,
+	absolute_control_switch = menu_switch_entry_new (FLIGHT_MENU_ABSOLUTE_CONTROL_SWITCH,
 			"Absolute control");
-	menu_switch_entry_set_values_labels(absolute_control_switch, "no", "yes");
-	menu_switch_entry_set_active(absolute_control_switch, drone->abs_control);
-	menu_switch_entry_set_toggled_callback(absolute_control_switch,
+	menu_switch_entry_set_values_labels (absolute_control_switch, "no", "yes");
+	menu_switch_entry_set_active (absolute_control_switch, drone->abs_control);
+	menu_switch_entry_set_toggled_callback (absolute_control_switch,
 			on_absolute_control_switch_toggle, drone);
 
-	menu_add_entry(menu, (MenuEntry *) hull_switch);
-	menu_add_entry(menu, (MenuEntry *) outdoor_flight_switch);
-	menu_add_entry(menu, (MenuEntry *) autotakeoff_switch);
-	menu_add_entry(menu, (MenuEntry *) absolute_control_switch);
-	menu_add_entry(menu, (MenuEntry *) main_menu_button);
+	menu_add_entry (menu, (MenuEntry *) hull_switch);
+	menu_add_entry (menu, (MenuEntry *) outdoor_flight_switch);
+	menu_add_entry (menu, (MenuEntry *) autotakeoff_switch);
+	menu_add_entry (menu, (MenuEntry *) absolute_control_switch);
+	menu_add_entry (menu, (MenuEntry *) main_menu_button);
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
@@ -408,10 +409,10 @@ ui_flight_menu(UI * ui, Drone * drone)
 	menu_frame.y = position.y - 5;
 	menu_frame.w = menu_get_width(menu) + 10;
 	menu_frame.h = menu_get_height(menu) + 10;
-	frame = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+	frame = SDL_CreateRGBSurface (SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
-	SDL_FillRect(frame, NULL, SDL_MapRGB(frame->format, 0, 0, 0));
-	SDL_SetAlpha(frame, SDL_SRCALPHA, 200);
+	SDL_FillRect (frame, NULL, SDL_MapRGB(frame->format, 0, 0, 0));
+	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
 		switch (menu_update(menu)) {
@@ -422,20 +423,20 @@ ui_flight_menu(UI * ui, Drone * drone)
 
 			case MENU_STATE_VISIBLE:
 				/* sync option with drone */
-				menu_switch_entry_set_active(hull_switch,
+				menu_switch_entry_set_active (hull_switch,
 						drone->hull);
-				menu_switch_entry_set_active(outdoor_flight_switch,
+				menu_switch_entry_set_active (outdoor_flight_switch,
 						drone->outdoor);
-				menu_switch_entry_set_active(autotakeoff_switch,
+				menu_switch_entry_set_active (autotakeoff_switch,
 						drone->autotakeoff);
-				menu_switch_entry_set_active(absolute_control_switch,
+				menu_switch_entry_set_active (absolute_control_switch,
 						drone->abs_control);
 
-				SDL_BlitSurface(frame, NULL, ui->screen,
+				SDL_BlitSurface (frame, NULL, ui->screen,
 						&menu_frame);
-				menu_render_to(menu, ui->screen, &position);
-				sceDisplayWaitVblankStart();
-				SDL_Flip(ui->screen);
+				menu_render_to (menu, ui->screen, &position);
+				sceDisplayWaitVblankStart ();
+				SDL_Flip (ui->screen);
 				break;
 
 			case MENU_STATE_CANCELLED:
@@ -448,7 +449,7 @@ ui_flight_menu(UI * ui, Drone * drone)
 
 	switch (selected_id) {
 		case FLIGHT_MENU_FLAT_TRIM:
-			drone_flat_trim(drone);
+			drone_flat_trim (drone);
 			break;
 
 		default:
@@ -457,49 +458,51 @@ ui_flight_menu(UI * ui, Drone * drone)
 
 
 done:
-	menu_free(menu);
+	menu_free (menu);
 	return selected_id;
 }
 
 int
-ui_init(UI * ui, int width, int height)
+ui_init (UI * ui, int width, int height)
 {
 	ui->screen = NULL;
 	ui->font = NULL;
 
-	ui->screen = SDL_SetVideoMode(width, height, 32,
+	ui->screen = SDL_SetVideoMode (width, height, 32,
 			SDL_HWSURFACE | SDL_DOUBLEBUF);
 	if (ui->screen == NULL)
 		goto no_screen;
 
-	SDL_ShowCursor(SDL_DISABLE);
+	SDL_ShowCursor (SDL_DISABLE);
 
-	ui->font = TTF_OpenFont("DejaVuSans.ttf", 16);
+	ui->font = TTF_OpenFont ("DejaVuSans.ttf", 16);
 	if (ui->font == NULL)
 		goto no_font;
 
 	/* initialize controller */
-	sceCtrlSetSamplingCycle(0); /* in ms: 0=VSYNC */
-	sceCtrlSetSamplingMode(PSP_CTRL_MODE_ANALOG);
+	sceCtrlSetSamplingCycle (0); /* in ms: 0=VSYNC */
+	sceCtrlSetSamplingMode (PSP_CTRL_MODE_ANALOG);
 
 	return 0;
 
 no_screen:
-	PSPLOG_ERROR("failed to set screen video mode");
+	PSPLOG_ERROR ("failed to set screen video mode");
 	return -1;
 
 no_font:
-	PSPLOG_ERROR("failed to open font");
+	PSPLOG_ERROR ("failed to open font");
 	return -1;
 }
 
-void ui_deinit(UI * ui)
+void
+ui_deinit(UI * ui)
 {
 	if (ui->font)
-		TTF_CloseFont(ui->font);
+		TTF_CloseFont (ui->font);
 }
 
-int ui_main_menu_run(UI * ui)
+int
+ui_main_menu_run (UI * ui)
 {
 	Menu *main_menu;
 	MenuButtonEntry *connect_button;
@@ -511,49 +514,49 @@ int ui_main_menu_run(UI * ui)
 	SDL_Rect menu_frame;
 	int selected_id = -1;
 
-	main_menu = menu_new(font, 0);
-	connect_button = menu_button_entry_new(MAIN_MENU_CONNECT,
+	main_menu = menu_new (font, 0);
+	connect_button = menu_button_entry_new (MAIN_MENU_CONNECT,
 			"Connect to drone");
-	exit_button = menu_button_entry_new(MAIN_MENU_EXIT, "Exit");
+	exit_button = menu_button_entry_new (MAIN_MENU_EXIT, "Exit");
 
-	menu_add_entry(main_menu, (MenuEntry *) connect_button);
-	menu_add_entry(main_menu, (MenuEntry *) exit_button);
+	menu_add_entry (main_menu, (MenuEntry *) connect_button);
+	menu_add_entry (main_menu, (MenuEntry *) exit_button);
 
 	/* center position in screen */
-	position.x = (screen->w - menu_get_width(main_menu)) / 2;
-	position.y = (screen->h - menu_get_height(main_menu)) / 2;
+	position.x = (screen->w - menu_get_width (main_menu)) / 2;
+	position.y = (screen->h - menu_get_height (main_menu)) / 2;
 
 	/* delimitate menu with a black rectangle */
 	menu_frame.x = position.x - 5;
 	menu_frame.y = position.y - 5;
-	menu_frame.w = menu_get_width(main_menu) + 10;
-	menu_frame.h = menu_get_height(main_menu) + 10;
-	frame = SDL_CreateRGBSurface(SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+	menu_frame.w = menu_get_width (main_menu) + 10;
+	menu_frame.h = menu_get_height (main_menu) + 10;
+	frame = SDL_CreateRGBSurface (SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
-	SDL_FillRect(frame, NULL, SDL_MapRGB(frame->format, 0, 0, 0));
-	SDL_SetAlpha(frame, SDL_SRCALPHA, 200);
+	SDL_FillRect (frame, NULL, SDL_MapRGB (frame->format, 0, 0, 0));
+	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
-		switch (menu_update(main_menu)) {
+		switch (menu_update (main_menu)) {
 			case MENU_STATE_CLOSE:
-				selected_id = menu_get_selected_id(main_menu);
+				selected_id = menu_get_selected_id (main_menu);
 				goto done;
 				break;
 			default:
 				/* update screen */
 				SDL_FillRect (ui->screen, NULL,
-						SDL_MapRGB(ui->screen->format, 28, 142, 207));
-				SDL_BlitSurface(frame, NULL, screen, &menu_frame);
-				menu_render_to(main_menu, screen, &position);
-				sceDisplayWaitVblankStart();
-				SDL_Flip(screen);
+						SDL_MapRGB (ui->screen->format, 28, 142, 207));
+				SDL_BlitSurface (frame, NULL, screen, &menu_frame);
+				menu_render_to (main_menu, screen, &position);
+				sceDisplayWaitVblankStart ();
+				SDL_Flip (screen);
 				break;
 		}
 	}
 
 done:
-	SDL_FreeSurface(frame);
-	menu_free(main_menu);
+	SDL_FreeSurface (frame);
+	menu_free (main_menu);
 	return selected_id;
 }
 
@@ -561,16 +564,16 @@ done:
  * 1 when cancelled (ie back)
  */
 int
-ui_network_dialog_run(UI * ui)
+ui_network_dialog_run (UI * ui)
 {
 	pspUtilityNetconfData conf;
 	struct pspUtilityNetconfAdhoc adhoc_params;
 	unsigned int swap_count = 0;
 
-	memset(&conf, 0, sizeof(conf));
-	memset(&adhoc_params, 0, sizeof(adhoc_params));
+	memset(&conf, 0, sizeof (conf));
+	memset(&adhoc_params, 0, sizeof (adhoc_params));
 
-	conf.base.size = sizeof(conf);
+	conf.base.size = sizeof (conf);
 	conf.base.language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
 	conf.base.buttonSwap = PSP_UTILITY_ACCEPT_CROSS;
 
@@ -589,23 +592,23 @@ ui_network_dialog_run(UI * ui)
 		int done = 0;
 
 		/* directly use GU to avoid flickering with SDL */
-		sceGuStart(GU_DIRECT, list);
-		sceGuClearColor(0xff554433);
-		sceGuClearDepth(0);
-		sceGuClear(GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
-		sceGuFinish();
-		sceGuSync(0,0);
+		sceGuStart (GU_DIRECT, list);
+		sceGuClearColor (0xff554433);
+		sceGuClearDepth (0);
+		sceGuClear (GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+		sceGuFinish ();
+		sceGuSync (0,0);
 
-		switch (sceUtilityNetconfGetStatus()) {
+		switch (sceUtilityNetconfGetStatus ()) {
 			case PSP_UTILITY_DIALOG_NONE:
 				break;
 
 			case PSP_UTILITY_DIALOG_VISIBLE:
-				sceUtilityNetconfUpdate(1);
+				sceUtilityNetconfUpdate (1);
 				break;
 
 			case PSP_UTILITY_DIALOG_QUIT:
-				sceUtilityNetconfShutdownStart();
+				sceUtilityNetconfShutdownStart ();
 				break;
 
 			case PSP_UTILITY_DIALOG_FINISHED:
@@ -616,8 +619,8 @@ ui_network_dialog_run(UI * ui)
 				break;
 		}
 
-		sceDisplayWaitVblankStart();
-		sceGuSwapBuffers();
+		sceDisplayWaitVblankStart ();
+		sceGuSwapBuffers ();
 		swap_count++;
 
 		if (done)
@@ -629,13 +632,13 @@ ui_network_dialog_run(UI * ui)
 	 * ie SDL will display in an hidden buffer
 	 */
 	if (swap_count & 1)
-		sceGuSwapBuffers();
+		sceGuSwapBuffers ();
 
 	return conf.base.result;
 }
 
 int
-ui_flight_run(UI * ui, Drone * drone)
+ui_flight_run (UI * ui, Drone * drone)
 {
 	int ret = 0;
 	int is_flying = 0;
@@ -651,29 +654,29 @@ ui_flight_run(UI * ui, Drone * drone)
 		ui_flight_update (ui, drone);
 
 		sceCtrlReadBufferPositive (&pad, 1);
-		sceCtrlReadLatch(&latch);
+		sceCtrlReadLatch (&latch);
 
 		is_flying = (drone->state == DRONE_STATE_TAKING_OFF) ||
 			(drone->state == DRONE_STATE_FLYING);
 
 		/* Check triangle and circle transition */
-		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_TRIANGLE)) {
+		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_TRIANGLE)) {
 			if (is_flying)
 				drone_landing (drone);
 			else
 				drone_takeoff (drone);
 		}
 
-		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_CIRCLE)) {
+		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_CIRCLE)) {
 			drone_emergency (drone);
 			is_flying = 0;
 		}
 
-		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_SELECT))
-			drone_do_flip(drone, DRONE_FLIP_FRONT);
+		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_SELECT))
+			drone_do_flip (drone, DRONE_FLIP_FRONT);
 
-		if (EVENT_BUTTON_DOWN(&latch, PSP_CTRL_START)) {
-			if (ui_flight_menu(ui, drone) == FLIGHT_MENU_QUIT) {
+		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_START)) {
+			if (ui_flight_menu (ui, drone) == FLIGHT_MENU_QUIT) {
 				ret = FLIGHT_UI_MAIN_MENU;
 				break;
 			}

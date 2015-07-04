@@ -32,7 +32,8 @@
 #include <libARNetworkAL/ARNetworkAL.h>
 #include <libARNetwork/ARNetwork.h>
 
-typedef enum {
+typedef enum
+{
 	DRONE_STATE_LANDED = 0,
 	DRONE_STATE_TAKING_OFF,
 	DRONE_STATE_FLYING,
@@ -40,7 +41,8 @@ typedef enum {
 	DRONE_STATE_EMERGENCY
 } DroneState;
 
-typedef enum {
+typedef enum
+{
 	DRONE_FLIP_FRONT = 0,
 	DRONE_FLIP_BACK,
 	DRONE_FLIP_RIGHT,
@@ -84,9 +86,9 @@ struct _drone
 int drone_init (Drone * drone);
 void drone_deinit (Drone * drone);
 
-int drone_connect(Drone * drone, const char * ipv4, int discovery_port,
+int drone_connect (Drone * drone, const char * ipv4, int discovery_port,
 		int c2d_port, int d2c_port);
-int drone_disconnect(Drone * drone);
+int drone_disconnect (Drone * drone);
 
 int drone_emergency (Drone * drone);
 int drone_takeoff (Drone * drone);

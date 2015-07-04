@@ -28,7 +28,8 @@
 #ifndef PSPLOG_H_
 #define PSPLOG_H_
 
-enum psplog_category {
+enum psplog_category
+{
 	PSPLOG_CAT_ERROR = 0,
 	PSPLOG_CAT_WARNING,
 	PSPLOG_CAT_INFO,
@@ -50,11 +51,11 @@ enum psplog_category {
  * @level : max level to log
  * @path : path to log file. It could be NULL, in this case log output on screen
  */
-int psplog_init(enum psplog_category level, const char *path);
+int psplog_init (enum psplog_category level, const char *path);
 
-void psplog_deinit();
+void psplog_deinit ();
 
-void psplog_print(enum psplog_category cat, const char * fmt, ...);
+void psplog_print (enum psplog_category cat, const char * fmt, ...);
 
 
 #endif

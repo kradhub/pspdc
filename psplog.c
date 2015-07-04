@@ -41,7 +41,8 @@
 #define COLOR_YELLOW 0x00ffffU
 #define COLOR_WHITE  0xffffffU
 
-enum psplog_output {
+enum psplog_output
+{
 	PSPLOG_OUTPUT_SCREEN,
 	PSPLOG_OUTPUT_FILE,
 };
@@ -58,7 +59,8 @@ static const char * const psplog_category_str[] = {
 	"DEBUG"
 };
 
-static const char * psplog_category_get_name(enum psplog_category cat)
+static const char *
+psplog_category_get_name (enum psplog_category cat)
 {
 	if (cat >= PSPLOG_CAT_ERROR || cat <= PSPLOG_CAT_DEBUG)
 		return psplog_category_str[cat];
@@ -66,21 +68,22 @@ static const char * psplog_category_get_name(enum psplog_category cat)
 		return "?????";
 }
 
-int psplog_init(enum psplog_category level, const char *path)
+int
+psplog_init (enum psplog_category level, const char *path)
 {
 	output = path ? PSPLOG_OUTPUT_FILE : PSPLOG_OUTPUT_SCREEN;
 
 	if (output == PSPLOG_OUTPUT_FILE) {
-		psplog_fd = sceIoOpen(path,
+		psplog_fd = sceIoOpen (path,
 				PSP_O_WRONLY | PSP_O_CREAT | PSP_O_TRUNC, 0777);
 		if (psplog_fd < 0)
 			return -1;
 	} else {
-		pspDebugScreenInit();
-		pspDebugScreenSetXY(0, 0);
+		pspDebugScreenInit ();
+		pspDebugScreenSetXY (0, 0);
 	}
 
-	psplog_semaphore = sceKernelCreateSema("psplog_semaphore", 0, 1, 1,
+	psplog_semaphore = sceKernelCreateSema ("psplog_semaphore", 0, 1, 1,
 			NULL);
 
 	level_threshold = level;
@@ -88,15 +91,17 @@ int psplog_init(enum psplog_category level, const char *path)
 	return 0;
 }
 
-void psplog_deinit()
+void
+psplog_deinit()
 {
 	if (psplog_fd > 0)
-		sceIoClose(psplog_fd);
+		sceIoClose (psplog_fd);
 
-	sceKernelDeleteSema(psplog_semaphore);
+	sceKernelDeleteSema (psplog_semaphore);
 }
 
-int psplog_format(char *buf, size_t size, enum psplog_category cat,
+int
+psplog_format (char *buf, size_t size, enum psplog_category cat,
 		const char * fmt, va_list ap)
 {
 	int wbytes;
@@ -106,28 +111,30 @@ int psplog_format(char *buf, size_t size, enum psplog_category cat,
 	if (size < 9)
 		return -1;
 
-	wbytes = snprintf(buf, size, "%s ", psplog_category_get_name(cat));
+	wbytes = snprintf (buf, size, "%s ", psplog_category_get_name(cat));
 
 	/* keep 1 byte of buf for \n */
-	wbytes += vsnprintf(buf + wbytes, size - wbytes - 1, fmt, ap);
+	wbytes += vsnprintf (buf + wbytes, size - wbytes - 1, fmt, ap);
 	buf[wbytes++] = '\n';
 	return wbytes;
 }
 
-int psplog_print_file(enum psplog_category cat, const char *buf, size_t size)
+int
+psplog_print_file (enum psplog_category cat, const char *buf, size_t size)
 {
 	int wbytes;
 
 	if (psplog_fd > 0) {
-		wbytes = sceIoWrite(psplog_fd, buf, size);
+		wbytes = sceIoWrite (psplog_fd, buf, size);
 		/* sceIoSync("ms0:", 0); */
 		return wbytes;
 	}
-	else
-		return -1;
+
+	return -1;
 }
 
-int psplog_print_screen(enum psplog_category cat, const char *buf, size_t size)
+int
+psplog_print_screen (enum psplog_category cat, const char *buf, size_t size)
 {
 	u32 color;
 
@@ -149,14 +156,15 @@ int psplog_print_screen(enum psplog_category cat, const char *buf, size_t size)
 			break;
 	}
 
-	pspDebugScreenSetTextColor(color);
-	pspDebugScreenPrintData(buf, size);
-	pspDebugScreenSetTextColor(COLOR_WHITE);
+	pspDebugScreenSetTextColor (color);
+	pspDebugScreenPrintData (buf, size);
+	pspDebugScreenSetTextColor (COLOR_WHITE);
 
 	return 0;
 }
 
-void psplog_print(enum psplog_category cat, const char * fmt, ...)
+void
+psplog_print (enum psplog_category cat, const char * fmt, ...)
 {
 	va_list ap;
 	char buf[BUFFER_LEN] = { 0, };
@@ -165,20 +173,20 @@ void psplog_print(enum psplog_category cat, const char * fmt, ...)
 	if (cat > level_threshold)
 		return;
 
-	if(sceKernelWaitSema(psplog_semaphore, 1, NULL) < 0)
+	if (sceKernelWaitSema (psplog_semaphore, 1, NULL) < 0)
 		goto done;
 
-	va_start(ap, fmt);
-	size = psplog_format(buf, BUFFER_LEN, cat, fmt, ap);
-	va_end(ap);
+	va_start (ap, fmt);
+	size = psplog_format (buf, BUFFER_LEN, cat, fmt, ap);
+	va_end (ap);
 
 	if (output == PSPLOG_OUTPUT_FILE) {
-		psplog_print_file(cat, buf, size);
+		psplog_print_file (cat, buf, size);
 	} else {
-		psplog_print_screen(cat, buf, size);
+		psplog_print_screen (cat, buf, size);
 	}
 
-	sceKernelSignalSema(psplog_semaphore, 1);
+	sceKernelSignalSema (psplog_semaphore, 1);
 
 done:
 	return;
