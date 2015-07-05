@@ -45,14 +45,24 @@ unsigned int __attribute__((aligned(16))) list[4096];
 
 enum
 {
-	FLIGHT_MENU_QUIT = 0,
-	FLIGHT_MENU_HULL_SWITCH = 1,
-	FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
-	FLIGHT_MENU_AUTOTAKEOFF_SWITCH,
-	FLIGHT_MENU_ABSOLUTE_CONTROL_SWITCH,
-	FLIGHT_MENU_FLAT_TRIM,
-	FLIGHT_MENU_SW_VERSION,
-	FLIGHT_MENU_HW_VERSION,
+	FLIGHT_MAIN_MENU_QUIT = 0,
+	FLIGHT_MAIN_MENU_FLAT_TRIM,
+	FLIGHT_MAIN_MENU_PILOTING_SETTINGS,
+	FLIGHT_MAIN_MENU_DRONE_INFO,
+};
+
+enum
+{
+	PILOTING_SETTINGS_MENU_HULL = 0,
+	PILOTING_SETTINGS_MENU_OUTDOOR_FLIGHT,
+	PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
+	PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL
+};
+
+enum
+{
+	DRONE_INFO_MENU_DRONE_HW = 0,
+	DRONE_INFO_MENU_DRONE_SW,
 };
 
 static int
@@ -340,10 +350,9 @@ on_absolute_control_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 }
 
 static int
-ui_flight_menu (UI * ui, Drone * drone)
+ui_piloting_settings_menu (UI * ui, Drone * drone)
 {
 	Menu *menu;
-	MenuButtonEntry *main_menu_button;
 	MenuSwitchEntry *hull_switch;
 	MenuSwitchEntry *outdoor_flight_switch;
 	MenuSwitchEntry *autotakeoff_switch;
@@ -351,46 +360,39 @@ ui_flight_menu (UI * ui, Drone * drone)
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
-	int selected_id = -1;
 
 	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
-	main_menu_button = menu_button_entry_new (FLIGHT_MENU_QUIT,
-			"Return to main menu");
-
-	/* button to do flat trim */
-	{
-		MenuButtonEntry *button;
-
-		button = menu_button_entry_new (FLIGHT_MENU_FLAT_TRIM,
-				"do flat trim");
-		menu_add_entry (menu, (MenuEntry *) button);
-	}
 
 	/* hull presence selection */
-	hull_switch = menu_switch_entry_new (FLIGHT_MENU_HULL_SWITCH,
+	hull_switch = menu_switch_entry_new (PILOTING_SETTINGS_MENU_HULL,
 			"Hull set");
 	menu_switch_entry_set_values_labels (hull_switch, "no", "yes");
 	menu_switch_entry_set_active (hull_switch, drone->hull);
 	menu_switch_entry_set_toggled_callback (hull_switch,
 			on_hull_switch_toggle, drone);
 
+	/* outdoor flight */
 	outdoor_flight_switch =
-		menu_switch_entry_new (FLIGHT_MENU_OUTDOOR_FLIGHT_SWITCH,
+		menu_switch_entry_new (PILOTING_SETTINGS_MENU_OUTDOOR_FLIGHT,
 				"outdoor flight");
 	menu_switch_entry_set_values_labels (outdoor_flight_switch, "no", "yes");
 	menu_switch_entry_set_active (outdoor_flight_switch, drone->outdoor);
 	menu_switch_entry_set_toggled_callback (outdoor_flight_switch,
 			on_outdoor_flight_switch_toggle, drone);
-	
-	autotakeoff_switch = menu_switch_entry_new (FLIGHT_MENU_AUTOTAKEOFF_SWITCH,
-			"Auto takeoff");
+
+	/* autotakeoff mode */
+	autotakeoff_switch =
+		menu_switch_entry_new (PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
+				"Auto takeoff");
 	menu_switch_entry_set_values_labels (autotakeoff_switch, "no", "yes");
 	menu_switch_entry_set_active (autotakeoff_switch, drone->autotakeoff);
 	menu_switch_entry_set_toggled_callback (autotakeoff_switch,
 			on_autotakeoff_switch_toggle, drone);
 
-	absolute_control_switch = menu_switch_entry_new (FLIGHT_MENU_ABSOLUTE_CONTROL_SWITCH,
-			"Absolute control");
+	/* absolute control mode */
+	absolute_control_switch =
+		menu_switch_entry_new (PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL,
+				"Absolute control");
 	menu_switch_entry_set_values_labels (absolute_control_switch, "no", "yes");
 	menu_switch_entry_set_active (absolute_control_switch, drone->abs_control);
 	menu_switch_entry_set_toggled_callback (absolute_control_switch,
@@ -400,24 +402,6 @@ ui_flight_menu (UI * ui, Drone * drone)
 	menu_add_entry (menu, (MenuEntry *) outdoor_flight_switch);
 	menu_add_entry (menu, (MenuEntry *) autotakeoff_switch);
 	menu_add_entry (menu, (MenuEntry *) absolute_control_switch);
-	menu_add_entry (menu, (MenuEntry *) main_menu_button);
-
-	{
-		MenuLabelEntry *sw;
-		MenuLabelEntry *hw;
-		char tmp[128] = { 0, };
-
-		snprintf (tmp, 127, "Drone SW: %s", drone->software_version);
-		sw = menu_label_entry_new (FLIGHT_MENU_SW_VERSION,
-				tmp);
-
-		snprintf (tmp, 127, "Drone HW: %s", drone->hardware_version);
-		hw = menu_label_entry_new (FLIGHT_MENU_HW_VERSION,
-				tmp);
-
-		menu_add_entry (menu, (MenuEntry *) sw);
-		menu_add_entry (menu, (MenuEntry *) hw);
-	}
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
@@ -426,20 +410,15 @@ ui_flight_menu (UI * ui, Drone * drone)
 	/* to fill a rectangle in background to delimitate menu */
 	menu_frame.x = position.x - 5;
 	menu_frame.y = position.y - 5;
-	menu_frame.w = menu_get_width(menu) + 10;
-	menu_frame.h = menu_get_height(menu) + 10;
+	menu_frame.w = menu_get_width (menu) + 10;
+	menu_frame.h = menu_get_height (menu) + 10;
 	frame = SDL_CreateRGBSurface (SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
 			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
-	SDL_FillRect (frame, NULL, SDL_MapRGB(frame->format, 0, 0, 0));
+	SDL_FillRect (frame, NULL, SDL_MapRGB (frame->format, 0, 0, 0));
 	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
-		switch (menu_update(menu)) {
-			case MENU_STATE_CLOSE:
-				selected_id = menu_get_selected_id(menu);
-				goto done;
-				break;
-
+		switch (menu_update (menu)) {
 			case MENU_STATE_VISIBLE:
 				/* sync option with drone */
 				menu_switch_entry_set_active (hull_switch,
@@ -458,6 +437,7 @@ ui_flight_menu (UI * ui, Drone * drone)
 				SDL_Flip (ui->screen);
 				break;
 
+			case MENU_STATE_CLOSE:
 			case MENU_STATE_CANCELLED:
 			default:
 				goto done;
@@ -466,17 +446,153 @@ ui_flight_menu (UI * ui, Drone * drone)
 		}
 	}
 
+done:
+	menu_free (menu);
+	return 0;
+}
+
+static int
+ui_drone_info_menu (UI * ui, Drone * drone)
+{
+	Menu *menu;
+	MenuLabelEntry *drone_sw;
+	MenuLabelEntry *drone_hw;
+	char tmp[128] = { 0, };
+	SDL_Rect position;
+	SDL_Surface *frame;
+	SDL_Rect menu_frame;
+
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+
+	snprintf (tmp, 127, "Drone HW: %s", drone->hardware_version);
+	drone_hw = menu_label_entry_new (DRONE_INFO_MENU_DRONE_HW, tmp);
+
+	snprintf (tmp, 127, "Drone SW: %s", drone->software_version);
+	drone_sw = menu_label_entry_new (DRONE_INFO_MENU_DRONE_HW, tmp);
+
+	menu_add_entry (menu, (MenuEntry *) drone_hw);
+	menu_add_entry (menu, (MenuEntry *) drone_sw);
+
+	/* center position in screen */
+	position.x = (ui->screen->w - menu_get_width (menu)) / 2;
+	position.y = (ui->screen->h - menu_get_height (menu)) / 2;
+
+	/* to fill a rectangle in background to delimitate menu */
+	menu_frame.x = position.x - 5;
+	menu_frame.y = position.y - 5;
+	menu_frame.w = menu_get_width (menu) + 10;
+	menu_frame.h = menu_get_height (menu) + 10;
+	frame = SDL_CreateRGBSurface (SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
+	SDL_FillRect (frame, NULL, SDL_MapRGB (frame->format, 0, 0, 0));
+	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
+
+	while (running) {
+		switch (menu_update (menu)) {
+			case MENU_STATE_VISIBLE:
+				SDL_BlitSurface (frame, NULL, ui->screen,
+						&menu_frame);
+				menu_render_to (menu, ui->screen, &position);
+				sceDisplayWaitVblankStart ();
+				SDL_Flip (ui->screen);
+				break;
+
+			case MENU_STATE_CANCELLED:
+			case MENU_STATE_CLOSE:
+			default:
+				goto done;
+				break;
+		}
+	}
+
+done:
+	menu_free (menu);
+	return 0;
+}
+
+static int
+ui_flight_main_menu (UI * ui, Drone * drone)
+{
+	Menu *menu;
+	MenuButtonEntry *quit;
+	MenuButtonEntry *flat_trim;
+	MenuButtonEntry *piloting_settings;
+	MenuButtonEntry *drone_info;
+	SDL_Rect position;
+	SDL_Surface *frame;
+	SDL_Rect menu_frame;
+	int selected_id = -1;
+
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+
+	quit = menu_button_entry_new (FLIGHT_MAIN_MENU_QUIT,
+			"Return to main menu");
+	flat_trim = menu_button_entry_new (FLIGHT_MAIN_MENU_FLAT_TRIM,
+			"Do flat trim");
+	piloting_settings = menu_button_entry_new (
+			FLIGHT_MAIN_MENU_PILOTING_SETTINGS,
+			"Piloting settings");
+	drone_info = menu_button_entry_new (FLIGHT_MAIN_MENU_DRONE_INFO,
+			"Drone information");
+
+	menu_add_entry (menu, (MenuEntry *) flat_trim);
+	menu_add_entry (menu, (MenuEntry *) piloting_settings);
+	menu_add_entry (menu, (MenuEntry *) drone_info);
+	menu_add_entry (menu, (MenuEntry *) quit);
+
+	/* center position in screen */
+	position.x = (ui->screen->w - menu_get_width (menu)) / 2;
+	position.y = (ui->screen->h - menu_get_height (menu)) / 2;
+
+	/* to fill a rectangle in background to delimitate menu */
+	menu_frame.x = position.x - 5;
+	menu_frame.y = position.y - 5;
+	menu_frame.w = menu_get_width (menu) + 10;
+	menu_frame.h = menu_get_height (menu) + 10;
+	frame = SDL_CreateRGBSurface (SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
+	SDL_FillRect (frame, NULL, SDL_MapRGB (frame->format, 0, 0, 0));
+	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
+
+	while (running) {
+		switch (menu_update (menu)) {
+			case MENU_STATE_CLOSE:
+				selected_id = menu_get_selected_id (menu);
+				goto done;
+				break;
+
+			case MENU_STATE_VISIBLE:
+				SDL_BlitSurface (frame, NULL, ui->screen,
+						&menu_frame);
+				menu_render_to (menu, ui->screen, &position);
+				sceDisplayWaitVblankStart ();
+				SDL_Flip (ui->screen);
+				break;
+
+			case MENU_STATE_CANCELLED:
+			default:
+				goto done;
+		}
+	}
+
+done:
 	switch (selected_id) {
-		case FLIGHT_MENU_FLAT_TRIM:
+		case FLIGHT_MAIN_MENU_FLAT_TRIM:
 			drone_flat_trim (drone);
+			break;
+
+		case FLIGHT_MAIN_MENU_PILOTING_SETTINGS:
+			ui_piloting_settings_menu (ui, drone);
+			break;
+
+		case FLIGHT_MAIN_MENU_DRONE_INFO:
+			ui_drone_info_menu (ui, drone);
 			break;
 
 		default:
 			break;
 	}
 
-
-done:
 	menu_free (menu);
 	return selected_id;
 }
@@ -695,7 +811,8 @@ ui_flight_run (UI * ui, Drone * drone)
 			drone_do_flip (drone, DRONE_FLIP_FRONT);
 
 		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_START)) {
-			if (ui_flight_menu (ui, drone) == FLIGHT_MENU_QUIT) {
+			if (ui_flight_main_menu (ui, drone) ==
+					FLIGHT_MAIN_MENU_QUIT) {
 				ret = FLIGHT_UI_MAIN_MENU;
 				break;
 			}
