@@ -83,6 +83,7 @@ struct _drone
 	double gps_altitude;
 	char *software_version;
 	char *hardware_version;
+	char *arcommand_version;
 };
 
 int drone_init (Drone * drone);

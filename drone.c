@@ -365,6 +365,19 @@ on_product_version_changed (char * software, char * hardware, void * userdata)
 	drone->hardware_version = strdup (hardware);
 }
 
+static void
+on_arcommand_version (char * version, void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got arcommands version %s", version);
+
+	if (drone->arcommand_version)
+		free (drone->arcommand_version);
+
+	drone->arcommand_version = strdup (version);
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -476,6 +489,8 @@ drone_init (Drone * drone)
 	/* general state callback */
 	ARCOMMANDS_Decoder_SetCommonSettingsStateProductVersionChangedCallback (
 			on_product_version_changed, drone);
+	ARCOMMANDS_Decoder_SetCommonARLibsVersionsStateDeviceLibARCommandsVersionCallback (
+			on_arcommand_version, drone);
 	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
 			on_battery_status_changed, drone);
 
@@ -520,6 +535,9 @@ drone_deinit (Drone * drone)
 
 	if (drone->hardware_version)
 		free (drone->hardware_version);
+
+	if (drone->arcommand_version)
+		free (drone->arcommand_version);
 }
 
 int

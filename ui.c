@@ -63,6 +63,7 @@ enum
 {
 	DRONE_INFO_MENU_DRONE_HW = 0,
 	DRONE_INFO_MENU_DRONE_SW,
+	DRONE_INFO_MENU_ARCOMMAND_VERSION,
 };
 
 static int
@@ -457,6 +458,7 @@ ui_drone_info_menu (UI * ui, Drone * drone)
 	Menu *menu;
 	MenuLabelEntry *drone_sw;
 	MenuLabelEntry *drone_hw;
+	MenuLabelEntry *arcommand_version;
 	char tmp[128] = { 0, };
 	SDL_Rect position;
 	SDL_Surface *frame;
@@ -470,8 +472,13 @@ ui_drone_info_menu (UI * ui, Drone * drone)
 	snprintf (tmp, 127, "Drone SW: %s", drone->software_version);
 	drone_sw = menu_label_entry_new (DRONE_INFO_MENU_DRONE_HW, tmp);
 
+	snprintf (tmp, 127, "Protocol version: %s", drone->arcommand_version);
+	arcommand_version =
+		menu_label_entry_new (DRONE_INFO_MENU_ARCOMMAND_VERSION, tmp);
+
 	menu_add_entry (menu, (MenuEntry *) drone_hw);
 	menu_add_entry (menu, (MenuEntry *) drone_sw);
+	menu_add_entry (menu, (MenuEntry *) arcommand_version);
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width (menu)) / 2;
