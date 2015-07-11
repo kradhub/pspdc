@@ -112,4 +112,6 @@ int drone_outdoor_flight_set_active (Drone * drone, int active);
 int drone_autotakeoff_set_active (Drone * drone, int active);
 int drone_absolute_control_set_active (Drone * drone, int active);
 
+int drone_take_picture (Drone * drone);
+
 #endif

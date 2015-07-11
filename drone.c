@@ -979,3 +979,24 @@ drone_do_flip (Drone * drone, DroneFlip flip)
 
 	return 0;
 }
+
+int
+drone_take_picture (Drone * drone)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t len;
+
+	err = ARCOMMANDS_Generator_GenerateARDrone3MediaRecordPictureV2 (cmd,
+			COMMAND_BUFFER_SIZE, &len);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate record picture command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send take picture command");
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, len, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
