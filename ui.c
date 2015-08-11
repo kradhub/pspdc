@@ -57,7 +57,8 @@ enum
 	PILOTING_SETTINGS_MENU_HULL = 0,
 	PILOTING_SETTINGS_MENU_OUTDOOR_FLIGHT,
 	PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
-	PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL
+	PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL,
+	PILOTING_SETTINGS_MENU_ALTITUDE_LIMIT
 };
 
 enum
@@ -367,6 +368,7 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	MenuSwitchEntry *outdoor_flight_switch;
 	MenuSwitchEntry *autotakeoff_switch;
 	MenuSwitchEntry *absolute_control_switch;
+	MenuScaleEntry *altitude_limit_scale;
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
@@ -408,10 +410,19 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	menu_switch_entry_set_toggled_callback (absolute_control_switch,
 			on_absolute_control_switch_toggle, drone);
 
+	/* altitude limit settings */
+	altitude_limit_scale =
+		menu_scale_entry_new (PILOTING_SETTINGS_MENU_ALTITUDE_LIMIT,
+				"altitude limit (m)", drone->altitude_limit.min,
+				drone->altitude_limit.max);
+	menu_scale_entry_set_value (altitude_limit_scale,
+			drone->altitude_limit.current);
+
 	menu_add_entry (menu, (MenuEntry *) hull_switch);
 	menu_add_entry (menu, (MenuEntry *) outdoor_flight_switch);
 	menu_add_entry (menu, (MenuEntry *) autotakeoff_switch);
 	menu_add_entry (menu, (MenuEntry *) absolute_control_switch);
+	menu_add_entry (menu, (MenuEntry *) altitude_limit_scale);
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
@@ -457,6 +468,13 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	}
 
 done:
+	/* send new scale entries value to drone, not done in callback
+	 * to avoid flooding drone and because it can't work well in our side
+	 * due to local update and callback for drones for previously sent
+	 * values. */
+	drone_altitude_limit_set (drone,
+			menu_scale_entry_get_value (altitude_limit_scale));
+
 	menu_free (menu);
 	return 0;
 }

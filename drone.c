@@ -1015,3 +1015,25 @@ drone_take_picture (Drone * drone)
 
 	return 0;
 }
+
+/* limit in meter */
+int
+drone_altitude_limit_set (Drone * drone, int limit)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t len;
+
+	err = ARCOMMANDS_Generator_GenerateARDrone3PilotingSettingsMaxAltitude (
+			cmd, COMMAND_BUFFER_SIZE, &len, limit);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate max altitude command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send max altitude (%d) command", limit);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, len, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
