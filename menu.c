@@ -84,6 +84,18 @@ struct _MenuSwitchEntry
 	void (*toggled) (MenuSwitchEntry * entry, void * userdata);
 };
 
+struct _MenuScaleEntry
+{
+	MenuEntry parent;
+
+	int min;
+	int max;
+	int current;
+
+	void *userdata;
+	MenuScaleEntryValueChangedCallback value_changed;
+};
+
 struct _Menu
 {
 	TTF_Font *font;
@@ -105,6 +117,10 @@ struct _Menu
 
 	unsigned int width;
 	unsigned int height;
+
+	/* used to filter controller */
+	unsigned int last_ts;
+	int threshold;
 };
 
 static int menu_entry_render (MenuEntry * entry, TTF_Font * font,
@@ -169,6 +185,31 @@ done:
 	return ret;
 }
 
+static void
+menu_repeat_button_reset (Menu * menu, const SceCtrlData * pad)
+{
+	menu->last_ts = pad->TimeStamp;
+	menu->threshold = 500 * 1000; /* 500 ms */
+}
+
+static int
+menu_is_button_repeated (Menu * menu, const SceCtrlData * pad, int ctrl)
+{
+	int ret = 1;
+
+	ret = ret && (pad->Buttons & ctrl);
+	ret = ret && ((pad->TimeStamp - menu->last_ts) > menu->threshold);
+
+	if (ret) {
+		menu->last_ts = pad->TimeStamp;
+		menu->threshold -= 200 * 1000; /* 200 ms */
+		if (menu->threshold < 100 * 1000)
+			menu->threshold = 100 * 1000;
+	}
+
+	return ret;
+}
+
 /*
  * API
  */
@@ -191,6 +232,8 @@ menu_new (TTF_Font * font, int options)
 	menu->selected_color = color_red;
 	menu->width = 0;
 	menu->height = 0;
+	menu->last_ts = 0;
+	menu->threshold = 500 * 1000; /* 500 ms */
 
 	return menu;
 }
@@ -244,9 +287,12 @@ menu_update (Menu * menu)
 {
 	MenuState state = MENU_STATE_VISIBLE;
 	MenuEntry *entry = menu->selected;
+	SceCtrlData pad;
 	SceCtrlLatch latch;
 
+	sceCtrlReadBufferPositive (&pad, 1);
 	sceCtrlReadLatch (&latch);
+
 	if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_UP))
 		menu_select_prev_entry (menu);
 
@@ -269,6 +315,31 @@ menu_update (Menu * menu)
 					&menu->selected_color);
 			}
 			break;
+
+		case MENU_ENTRY_TYPE_SCALE:
+		{
+			MenuScaleEntry *scale = (MenuScaleEntry *) entry;
+			int val = menu_scale_entry_get_value (scale);
+
+			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_LEFT)) {
+				menu_scale_entry_set_value (scale, val - 1);
+				menu_repeat_button_reset (menu, &pad);
+			} else if (menu_is_button_repeated (menu, &pad,
+						PSP_CTRL_LEFT)) {
+				menu_scale_entry_set_value (scale, val - 1);
+			} else if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_RIGHT)) {
+				menu_scale_entry_set_value (scale, val + 1);
+				menu_repeat_button_reset (menu, &pad);
+			} else if (menu_is_button_repeated (menu, &pad,
+						PSP_CTRL_RIGHT)) {
+				menu_scale_entry_set_value (scale, val + 1);
+			}
+
+			menu_entry_render (entry, menu->font,
+					&menu->selected_color);
+
+			break;
+		}
 
 		case MENU_ENTRY_TYPE_LABEL:
 		default:
@@ -620,5 +691,90 @@ menu_switch_entry_set_toggled_callback (MenuSwitchEntry * entry,
 		MenuSwitchEntryToggledCallback callback, void * userdata)
 {
 	entry->toggled = callback;
+	entry->userdata = userdata;
+}
+
+/**
+ * MenuScaleEntry API implementation
+ */
+static int
+menu_scale_entry_render (MenuEntry * entry, TTF_Font * font,
+		const SDL_Color * color)
+{
+	MenuScaleEntry *scale_entry = (MenuScaleEntry *) entry;
+	SDL_Surface *surface;
+	char *text;
+	int len = 255;
+	int ret = -1;
+
+	text = malloc (len * sizeof(char));
+	snprintf (text, len, "%s : <- %d ->", entry->title,
+			scale_entry->current);
+
+	surface = TTF_RenderText_Blended (font, text, *color);
+	if (!surface) {
+		PSPLOG_ERROR ("failed to render scale button, reason: %s",
+				TTF_GetError ());
+		goto done;
+	}
+
+	menu_surface_replace_helper (&entry->surface, surface);
+	ret = 0;
+
+done:
+	free (text);
+	return ret;
+}
+
+MenuScaleEntry *
+menu_scale_entry_new (int id, const char *title, int min, int max)
+{
+	MenuScaleEntry *entry;
+
+	if (max < min)
+		return NULL;
+
+	entry = malloc (sizeof (MenuScaleEntry));
+
+	menu_entry_init (&entry->parent, MENU_ENTRY_TYPE_SCALE, id, title, NULL);
+
+	entry->min = min;
+	entry->max = max;
+	entry->current = min;
+
+	entry->userdata = NULL;
+	entry->value_changed = NULL;
+
+	entry->parent.render = menu_scale_entry_render;
+
+	return entry;
+}
+
+int
+menu_scale_entry_get_value (MenuScaleEntry * entry)
+{
+	return entry->current;
+}
+
+void
+menu_scale_entry_set_value (MenuScaleEntry * entry, int value)
+{
+	if (value < entry->min)
+		value = entry->min;
+
+	if (value > entry->max)
+		value = entry->max;
+
+	entry->current = value;
+
+	if (entry->value_changed)
+		entry->value_changed (entry, entry->userdata);
+}
+
+void
+menu_scale_entry_set_value_changed_callback (MenuScaleEntry * entry,
+		MenuScaleEntryValueChangedCallback callback, void * userdata)
+{
+	entry->value_changed = callback;
 	entry->userdata = userdata;
 }

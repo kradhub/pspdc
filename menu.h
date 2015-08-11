@@ -45,7 +45,8 @@ typedef enum
 	MENU_ENTRY_TYPE_BASE = 0,
 	MENU_ENTRY_TYPE_LABEL,
 	MENU_ENTRY_TYPE_BUTTON,
-	MENU_ENTRY_TYPE_SWITCH
+	MENU_ENTRY_TYPE_SWITCH,
+	MENU_ENTRY_TYPE_SCALE
 } MenuEntryType;
 
 typedef struct _Menu Menu;
@@ -53,8 +54,10 @@ typedef struct _MenuEntry MenuEntry;
 typedef struct _MenuLabelEntry MenuLabelEntry;
 typedef struct _MenuButtonEntry MenuButtonEntry;
 typedef struct _MenuSwitchEntry MenuSwitchEntry;
+typedef struct _MenuScaleEntry MenuScaleEntry;
 
 typedef void (*MenuSwitchEntryToggledCallback)(MenuSwitchEntry * entry, void * userdata);
+typedef void (*MenuScaleEntryValueChangedCallback)(MenuScaleEntry * entry, void * userdata);
 
 Menu *menu_new (TTF_Font * font, int options);
 void menu_free (Menu * menu);
@@ -95,5 +98,13 @@ void menu_switch_entry_set_values_labels (MenuSwitchEntry * entry,
 		const char * off_label, const char * on_label);
 void menu_switch_entry_set_toggled_callback (MenuSwitchEntry * entry,
 		MenuSwitchEntryToggledCallback callback, void * userdata);
+
+/* MenuScaleEntry API */
+MenuScaleEntry *menu_scale_entry_new (int id, const char * title, int min,
+		int max);
+int menu_scale_entry_get_value (MenuScaleEntry * entry);
+void menu_scale_entry_set_value (MenuScaleEntry * entry, int value);
+void menu_scale_entry_set_value_changed_callback (MenuScaleEntry * entry,
+		MenuScaleEntryValueChangedCallback callback, void * userdata);
 
 #endif

@@ -48,6 +48,7 @@ enum
 	FLIGHT_MAIN_MENU_QUIT = 0,
 	FLIGHT_MAIN_MENU_FLAT_TRIM,
 	FLIGHT_MAIN_MENU_PILOTING_SETTINGS,
+	FLIGHT_MAIN_MENU_CONTROLS_SETTINGS,
 	FLIGHT_MAIN_MENU_DRONE_INFO,
 };
 
@@ -57,6 +58,14 @@ enum
 	PILOTING_SETTINGS_MENU_OUTDOOR_FLIGHT,
 	PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
 	PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL
+};
+
+enum
+{
+	CONTROLS_SETTINGS_YAW = 0,
+	CONTROLS_SETTINGS_PITCH,
+	CONTROLS_SETTINGS_ROLL,
+	CONTROLS_SETTINGS_GAZ,
 };
 
 enum
@@ -453,6 +462,83 @@ done:
 }
 
 static int
+ui_controls_settings_menu (UI * ui, Drone * drone)
+{
+	Menu *menu;
+	MenuScaleEntry *yaw_scale;
+	MenuScaleEntry *pitch_scale;
+	MenuScaleEntry *roll_scale;
+	MenuScaleEntry *gaz_scale;
+	SDL_Rect position;
+	SDL_Surface *frame;
+	SDL_Rect menu_frame;
+
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+
+	yaw_scale = menu_scale_entry_new (CONTROLS_SETTINGS_YAW, "yaw", 0, 100);
+	menu_scale_entry_set_value (yaw_scale, ui->setting_yaw);
+
+	pitch_scale = menu_scale_entry_new (CONTROLS_SETTINGS_PITCH, "pitch", 0,
+			100);
+	menu_scale_entry_set_value (pitch_scale, ui->setting_pitch);
+
+	roll_scale = menu_scale_entry_new (CONTROLS_SETTINGS_ROLL, "roll", 0,
+			100);
+	menu_scale_entry_set_value (roll_scale, ui->setting_roll);
+
+	gaz_scale = menu_scale_entry_new (CONTROLS_SETTINGS_GAZ, "gaz", 0, 100);
+	menu_scale_entry_set_value (gaz_scale, ui->setting_gaz);
+
+	menu_add_entry (menu, (MenuEntry *) yaw_scale);
+	menu_add_entry (menu, (MenuEntry *) pitch_scale);
+	menu_add_entry (menu, (MenuEntry *) roll_scale);
+	menu_add_entry (menu, (MenuEntry *) gaz_scale);
+
+	/* center position in screen */
+	position.x = (ui->screen->w - menu_get_width (menu)) / 2;
+	position.y = (ui->screen->h - menu_get_height (menu)) / 2;
+
+	/* to fill a rectangle in background to delimitate menu */
+	menu_frame.x = position.x - 5;
+	menu_frame.y = position.y - 5;
+	menu_frame.w = menu_get_width (menu) + 10;
+	menu_frame.h = menu_get_height (menu) + 10;
+	frame = SDL_CreateRGBSurface (SDL_HWSURFACE | SDL_SRCCOLORKEY | SDL_SRCALPHA,
+			menu_frame.w, menu_frame.h, 32, 0, 0, 0, 0);
+	SDL_FillRect (frame, NULL, SDL_MapRGB (frame->format, 0, 0, 0));
+	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
+
+	while (running) {
+		switch (menu_update (menu)) {
+			case MENU_STATE_VISIBLE:
+				SDL_BlitSurface (frame, NULL, ui->screen,
+						&menu_frame);
+				menu_render_to (menu, ui->screen, &position);
+				sceDisplayWaitVblankStart ();
+				SDL_Flip (ui->screen);
+				break;
+
+			case MENU_STATE_CLOSE:
+			case MENU_STATE_CANCELLED:
+			default:
+				goto done;
+				break;
+
+		}
+	}
+
+done:
+	/* store value to ui */
+	ui->setting_yaw = menu_scale_entry_get_value (yaw_scale);
+	ui->setting_pitch = menu_scale_entry_get_value (pitch_scale);
+	ui->setting_roll = menu_scale_entry_get_value (roll_scale);
+	ui->setting_gaz = menu_scale_entry_get_value (gaz_scale);
+
+	menu_free (menu);
+	return 0;
+}
+
+static int
 ui_drone_info_menu (UI * ui, Drone * drone)
 {
 	Menu *menu;
@@ -524,6 +610,7 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 	MenuButtonEntry *quit;
 	MenuButtonEntry *flat_trim;
 	MenuButtonEntry *piloting_settings;
+	MenuButtonEntry *controls_settings;
 	MenuButtonEntry *drone_info;
 	SDL_Rect position;
 	SDL_Surface *frame;
@@ -539,11 +626,15 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 	piloting_settings = menu_button_entry_new (
 			FLIGHT_MAIN_MENU_PILOTING_SETTINGS,
 			"Piloting settings");
+	controls_settings =
+		menu_button_entry_new (FLIGHT_MAIN_MENU_CONTROLS_SETTINGS,
+			"Controls settings");
 	drone_info = menu_button_entry_new (FLIGHT_MAIN_MENU_DRONE_INFO,
 			"Drone information");
 
 	menu_add_entry (menu, (MenuEntry *) flat_trim);
 	menu_add_entry (menu, (MenuEntry *) piloting_settings);
+	menu_add_entry (menu, (MenuEntry *) controls_settings);
 	menu_add_entry (menu, (MenuEntry *) drone_info);
 	menu_add_entry (menu, (MenuEntry *) quit);
 
@@ -592,6 +683,10 @@ done:
 			ui_piloting_settings_menu (ui, drone);
 			break;
 
+		case FLIGHT_MAIN_MENU_CONTROLS_SETTINGS:
+			ui_controls_settings_menu (ui, drone);
+			break;
+
 		case FLIGHT_MAIN_MENU_DRONE_INFO:
 			ui_drone_info_menu (ui, drone);
 			break;
@@ -624,6 +719,11 @@ ui_init (UI * ui, int width, int height)
 	/* initialize controller */
 	sceCtrlSetSamplingCycle (0); /* in ms: 0=VSYNC */
 	sceCtrlSetSamplingMode (PSP_CTRL_MODE_ANALOG);
+
+	ui->setting_yaw = 50;
+	ui->setting_pitch = 50;
+	ui->setting_roll = 50;
+	ui->setting_gaz = 75;
 
 	return 0;
 
@@ -828,24 +928,24 @@ ui_flight_run (UI * ui, Drone * drone)
 		/* Send flight control */
 		if (pad.Buttons != 0) {
 			if (pad.Buttons & PSP_CTRL_CROSS)
-				gaz += 75;
+				gaz += ui->setting_gaz;
 			if (pad.Buttons & PSP_CTRL_SQUARE)
-				gaz -= 75;
+				gaz -= ui->setting_gaz;
 
 			if (pad.Buttons & PSP_CTRL_LTRIGGER)
-				yaw -= 50;
+				yaw -= ui->setting_yaw;
 			if (pad.Buttons & PSP_CTRL_RTRIGGER)
-				yaw += 50;
+				yaw += ui->setting_yaw;
 
 			if (pad.Buttons & PSP_CTRL_UP)
-				pitch += 50;
+				pitch += ui->setting_pitch;
 			if (pad.Buttons & PSP_CTRL_DOWN)
-				pitch -= 50;
+				pitch -= ui->setting_pitch;
 
 			if (pad.Buttons & PSP_CTRL_LEFT)
-				roll -= 50;
+				roll -= ui->setting_roll;
 			if (pad.Buttons & PSP_CTRL_RIGHT)
-				roll += 50;
+				roll += ui->setting_roll;
 		}
 
 		if (gaz || yaw || pitch || roll)

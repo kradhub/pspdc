@@ -51,6 +51,11 @@ struct _ui
 {
 	SDL_Surface *screen;
 	TTF_Font *font;
+
+	int setting_yaw;
+	int setting_pitch;
+	int setting_roll;
+	int setting_gaz;
 };
 
 int ui_init (UI * ui, int width, int height);
