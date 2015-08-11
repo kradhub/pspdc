@@ -50,6 +50,14 @@ typedef enum
 } DroneFlip;
 
 typedef struct _drone Drone;
+typedef struct _drone_setting DroneSetting;
+
+struct _drone_setting
+{
+	int min;
+	int max;
+	int current;
+};
 
 struct _drone
 {
@@ -84,6 +92,8 @@ struct _drone
 	char *software_version;
 	char *hardware_version;
 	char *arcommand_version;
+
+	DroneSetting altitude_limit;
 };
 
 int drone_init (Drone * drone);

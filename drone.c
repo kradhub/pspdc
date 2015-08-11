@@ -378,6 +378,19 @@ on_arcommand_version (char * version, void * userdata)
 	drone->arcommand_version = strdup (version);
 }
 
+static void
+on_setting_altitude_limit_changed (float current, float min, float max,
+		void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got altitude limit %f <= %f <= %f", min, current, max);
+
+	drone->altitude_limit.current = current;
+	drone->altitude_limit.min = min;
+	drone->altitude_limit.max = max;
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -511,6 +524,8 @@ drone_init (Drone * drone)
 			on_autotakeoff_mode_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateAbsolutControlChangedCallback (
 			on_absolute_control_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateMaxAltitudeChangedCallback (
+			on_setting_altitude_limit_changed, drone);
 
 	/* GPS callback */
 	ARCOMMANDS_Decoder_SetARDrone3GPSSettingsStateGPSFixStateChangedCallback (
