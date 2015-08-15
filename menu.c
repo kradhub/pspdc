@@ -286,7 +286,7 @@ MenuState
 menu_update (Menu * menu)
 {
 	MenuState state = MENU_STATE_VISIBLE;
-	MenuEntry *entry = menu->selected;
+	MenuEntry *entry;
 	SceCtrlData pad;
 	SceCtrlLatch latch;
 
@@ -298,6 +298,8 @@ menu_update (Menu * menu)
 
 	if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_DOWN))
 		menu_select_next_entry (menu);
+
+	entry = menu->selected;
 
 	switch (entry->type) {
 		case MENU_ENTRY_TYPE_BUTTON:
