@@ -391,6 +391,48 @@ on_setting_altitude_limit_changed (float current, float min, float max,
 	drone->altitude_limit.max = max;
 }
 
+static void
+on_setting_max_vertical_speed_changed (float current, float min, float max,
+		void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got max vertical speed limit %f <= %f <= %f", min,
+			current, max);
+
+	drone->vertical_speed_limit.current = current;
+	drone->vertical_speed_limit.min = min;
+	drone->vertical_speed_limit.max = max;
+}
+
+static void
+on_setting_max_rotation_speed_changed (float current, float min, float max,
+		void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got max rotation speed limit %f <= %f <= %f", min,
+			current, max);
+
+	drone->rotation_speed_limit.current = current;
+	drone->rotation_speed_limit.min = min;
+	drone->rotation_speed_limit.max = max;
+}
+
+static void
+on_setting_max_tilt_changed (float current, float min, float max,
+		void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got max tilt limit %f <= %f <= %f", min,
+			current, max);
+
+	drone->tilt_limit.current = current;
+	drone->tilt_limit.min = min;
+	drone->tilt_limit.max = max;
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -526,6 +568,12 @@ drone_init (Drone * drone)
 			on_absolute_control_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateMaxAltitudeChangedCallback (
 			on_setting_altitude_limit_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateMaxVerticalSpeedChangedCallback (
+			on_setting_max_vertical_speed_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateMaxRotationSpeedChangedCallback (
+			on_setting_max_rotation_speed_changed, drone);
+	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateMaxTiltChangedCallback (
+			on_setting_max_tilt_changed, drone);
 
 	/* GPS callback */
 	ARCOMMANDS_Decoder_SetARDrone3GPSSettingsStateGPSFixStateChangedCallback (
@@ -1032,6 +1080,72 @@ drone_altitude_limit_set (Drone * drone, int limit)
 	}
 
 	PSPLOG_DEBUG ("send max altitude (%d) command", limit);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, len, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+/* limit in m/s */
+int
+drone_vertical_speed_limit_set (Drone * drone, int limit)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t len;
+
+	err = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsMaxVerticalSpeed (
+			cmd, COMMAND_BUFFER_SIZE, &len, limit);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate max vertical speed command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send max vertical speed (%d) command", limit);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, len, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+/* limit in degree/s */
+int
+drone_rotation_speed_limit_set (Drone * drone, int limit)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t len;
+
+	err = ARCOMMANDS_Generator_GenerateARDrone3SpeedSettingsMaxRotationSpeed (
+			cmd, COMMAND_BUFFER_SIZE, &len, limit);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate max rotation speed command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send max rotation speed (%d) command", limit);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, len, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+/* limit in degrees */
+int
+drone_max_tilt_set (Drone * drone, int limit)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t len;
+
+	err = ARCOMMANDS_Generator_GenerateARDrone3PilotingSettingsMaxTilt (
+			cmd, COMMAND_BUFFER_SIZE, &len, limit);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate max tilt command");
+		return -1;
+	}
+
+	PSPLOG_DEBUG ("send max tilt (%d) command", limit);
 	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, len, NULL, &ar_network_command_cb, 1);
 

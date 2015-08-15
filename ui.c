@@ -58,7 +58,10 @@ enum
 	PILOTING_SETTINGS_MENU_OUTDOOR_FLIGHT,
 	PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
 	PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL,
-	PILOTING_SETTINGS_MENU_ALTITUDE_LIMIT
+	PILOTING_SETTINGS_MENU_ALTITUDE_LIMIT,
+	PILOTING_SETTINGS_MENU_VERTICAL_SPEED_LIMIT,
+	PILOTING_SETTINGS_MENU_ROTATION_SPEED_LIMIT,
+	PILOTING_SETTINGS_MENU_TILT_LIMIT,
 };
 
 enum
@@ -369,6 +372,9 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	MenuSwitchEntry *autotakeoff_switch;
 	MenuSwitchEntry *absolute_control_switch;
 	MenuScaleEntry *altitude_limit_scale;
+	MenuScaleEntry *vertical_limit_scale;
+	MenuScaleEntry *rotation_limit_scale;
+	MenuScaleEntry *tilt_limit_scale;
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
@@ -418,11 +424,41 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	menu_scale_entry_set_value (altitude_limit_scale,
 			drone->altitude_limit.current);
 
+	/* vertical speed limit settings */
+	vertical_limit_scale =
+		menu_scale_entry_new (PILOTING_SETTINGS_MENU_VERTICAL_SPEED_LIMIT,
+				"vertical speed limit (m/s)",
+				drone->vertical_speed_limit.min,
+				drone->vertical_speed_limit.max);
+	menu_scale_entry_set_value (vertical_limit_scale,
+			drone->vertical_speed_limit.current);
+
+	/* rotation speed limit settings */
+	rotation_limit_scale =
+		menu_scale_entry_new (PILOTING_SETTINGS_MENU_ROTATION_SPEED_LIMIT,
+				"rotation speed limit (deg/s)",
+				drone->rotation_speed_limit.min,
+				drone->rotation_speed_limit.max);
+	menu_scale_entry_set_value (rotation_limit_scale,
+			drone->rotation_speed_limit.current);
+
+	/* rotation speed limit settings */
+	tilt_limit_scale =
+		menu_scale_entry_new (PILOTING_SETTINGS_MENU_TILT_LIMIT,
+				"tilt limit (deg)",
+				drone->tilt_limit.min,
+				drone->tilt_limit.max);
+	menu_scale_entry_set_value (tilt_limit_scale,
+			drone->tilt_limit.current);
+
 	menu_add_entry (menu, (MenuEntry *) hull_switch);
 	menu_add_entry (menu, (MenuEntry *) outdoor_flight_switch);
 	menu_add_entry (menu, (MenuEntry *) autotakeoff_switch);
 	menu_add_entry (menu, (MenuEntry *) absolute_control_switch);
 	menu_add_entry (menu, (MenuEntry *) altitude_limit_scale);
+	menu_add_entry (menu, (MenuEntry *) vertical_limit_scale);
+	menu_add_entry (menu, (MenuEntry *) rotation_limit_scale);
+	menu_add_entry (menu, (MenuEntry *) tilt_limit_scale);
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width(menu)) / 2;
@@ -474,6 +510,12 @@ done:
 	 * values. */
 	drone_altitude_limit_set (drone,
 			menu_scale_entry_get_value (altitude_limit_scale));
+	drone_vertical_speed_limit_set (drone,
+			menu_scale_entry_get_value (vertical_limit_scale));
+	drone_rotation_speed_limit_set (drone,
+			menu_scale_entry_get_value (rotation_limit_scale));
+	drone_max_tilt_set (drone,
+			menu_scale_entry_get_value (tilt_limit_scale));
 
 	menu_free (menu);
 	return 0;

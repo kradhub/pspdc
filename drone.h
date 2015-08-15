@@ -94,6 +94,9 @@ struct _drone
 	char *arcommand_version;
 
 	DroneSetting altitude_limit;
+	DroneSetting vertical_speed_limit;
+	DroneSetting rotation_speed_limit;
+	DroneSetting tilt_limit;;
 };
 
 int drone_init (Drone * drone);
@@ -122,6 +125,9 @@ int drone_outdoor_flight_set_active (Drone * drone, int active);
 int drone_autotakeoff_set_active (Drone * drone, int active);
 int drone_absolute_control_set_active (Drone * drone, int active);
 int drone_altitude_limit_set (Drone * drone, int limit);
+int drone_vertical_speed_limit_set (Drone * drone, int limit);
+int drone_rotation_speed_limit_set (Drone * drone, int limit);
+int drone_max_tilt_set (Drone * drone, int limit);
 
 int drone_take_picture (Drone * drone);
 
