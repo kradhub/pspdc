@@ -310,11 +310,11 @@ menu_update (Menu * menu)
 		case MENU_ENTRY_TYPE_SWITCH:
 			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_LEFT) ||
 					EVENT_BUTTON_DOWN (&latch, PSP_CTRL_RIGHT)) {
-			menu_switch_entry_toggle ((MenuSwitchEntry *) entry);
+				menu_switch_entry_toggle ((MenuSwitchEntry *) entry);
 
-			/* re-render to reflect change */
-			menu_entry_render (entry, menu->font,
-					&menu->selected_color);
+				/* re-render to reflect change */
+				menu_entry_render (entry, menu->font,
+						&menu->selected_color);
 			}
 			break;
 
