@@ -102,6 +102,8 @@ struct _Menu
 
 	int options;
 
+	MenuCloseResult close_result;
+
 	/* not selected text color */
 	SDL_Color default_color;
 
@@ -223,6 +225,7 @@ menu_new (TTF_Font * font, int options)
 		return NULL;
 
 	menu->options = options;
+	menu->close_result = MENU_CLOSE_RESULT_NONE;
 	menu->font = font;
 	menu->head = NULL;
 	menu->tail = NULL;
@@ -282,6 +285,12 @@ menu_get_selected_id (Menu * menu)
 	return menu->selected->id;
 }
 
+int
+menu_get_close_result (Menu * menu)
+{
+	return menu->close_result;
+}
+
 MenuState
 menu_update (Menu * menu)
 {
@@ -289,6 +298,8 @@ menu_update (Menu * menu)
 	MenuEntry *entry;
 	SceCtrlData pad;
 	SceCtrlLatch latch;
+
+	menu->close_result = MENU_CLOSE_RESULT_NONE;
 
 	sceCtrlReadBufferPositive (&pad, 1);
 	sceCtrlReadLatch (&latch);
@@ -303,8 +314,10 @@ menu_update (Menu * menu)
 
 	switch (entry->type) {
 		case MENU_ENTRY_TYPE_BUTTON:
-			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_CROSS))
+			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_CROSS)) {
 				state = MENU_STATE_CLOSE;
+				menu->close_result = MENU_CLOSE_RESULT_BUTTON;
+			}
 			break;
 
 		case MENU_ENTRY_TYPE_SWITCH:
@@ -352,6 +365,11 @@ menu_update (Menu * menu)
 	if ((menu->options & MENU_CANCEL_ON_START) &&
 			EVENT_BUTTON_DOWN (&latch, PSP_CTRL_START))
 		state = MENU_STATE_CANCELLED;
+	if ((menu->options & MENU_BACK_ON_CIRCLE) &&
+			EVENT_BUTTON_DOWN (&latch, PSP_CTRL_CIRCLE)) {
+		state = MENU_STATE_CLOSE;
+		menu->close_result = MENU_CLOSE_RESULT_BACK;
+	}
 
 	return state;
 }

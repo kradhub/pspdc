@@ -32,6 +32,7 @@
 #include <SDL/SDL_ttf.h>
 
 #define MENU_CANCEL_ON_START 1
+#define MENU_BACK_ON_CIRCLE  1 << 1
 
 typedef enum
 {
@@ -39,6 +40,13 @@ typedef enum
 	MENU_STATE_VISIBLE,
 	MENU_STATE_CANCELLED,
 } MenuState;
+
+typedef enum
+{
+	MENU_CLOSE_RESULT_NONE = 0,
+	MENU_CLOSE_RESULT_BACK,
+	MENU_CLOSE_RESULT_BUTTON
+} MenuCloseResult;
 
 typedef enum
 {
@@ -68,6 +76,7 @@ void menu_set_selected_color (Menu * menu, const SDL_Color * color);
 int menu_get_width (Menu * menu);
 int menu_get_height (Menu * menu);
 int menu_get_selected_id (Menu * menu);
+int menu_get_close_result (Menu * menu);
 
 int menu_add_entry (Menu * menu, MenuEntry * entry);
 void menu_remove_entry (Menu * menu, MenuEntry * entry);
