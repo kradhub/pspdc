@@ -317,9 +317,6 @@ ui_flight_update (UI * ui, Drone * drone)
 	ret = ui_flight_altitude_update (ui, drone->altitude);
 	ret = ui_flight_gps_update (ui, drone);
 
-	sceDisplayWaitVblankStart ();
-	SDL_Flip (ui->screen);
-
 	return ret;
 }
 
@@ -475,6 +472,9 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
+		/*redraw flight ui */
+		ui_flight_update(ui, drone);
+
 		switch (menu_update (menu)) {
 			case MENU_STATE_VISIBLE:
 				/* sync option with drone */
@@ -569,6 +569,9 @@ ui_controls_settings_menu (UI * ui, Drone * drone)
 	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
+		/*redraw flight ui */
+		ui_flight_update(ui, drone);
+
 		switch (menu_update (menu)) {
 			case MENU_STATE_VISIBLE:
 				SDL_BlitSurface (frame, NULL, ui->screen,
@@ -641,6 +644,9 @@ ui_drone_info_menu (UI * ui, Drone * drone)
 	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
+		/*redraw flight ui */
+		ui_flight_update(ui, drone);
+
 		switch (menu_update (menu)) {
 			case MENU_STATE_VISIBLE:
 				SDL_BlitSurface (frame, NULL, ui->screen,
@@ -713,6 +719,9 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
 	while (running) {
+		/*redraw flight ui */
+		ui_flight_update(ui, drone);
+
 		switch (menu_update (menu)) {
 			case MENU_STATE_CLOSE:
 				selected_id = menu_get_selected_id (menu);
@@ -1010,6 +1019,9 @@ ui_flight_run (UI * ui, Drone * drone)
 
 		if (gaz || yaw || pitch || roll)
 			drone_flight_control (drone, gaz, yaw, pitch, roll);
+
+		sceDisplayWaitVblankStart ();
+		SDL_Flip (ui->screen);
 	}
 
 	return ret;
