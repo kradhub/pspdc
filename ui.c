@@ -832,11 +832,18 @@ ui_main_menu_run (UI * ui)
 	MenuButtonEntry *connect_button;
 	MenuButtonEntry *exit_button;
 	SDL_Surface *screen = ui->screen;
+	SDL_Surface *title;
 	TTF_Font *font = ui->font;
 	SDL_Rect position;
+	SDL_Rect title_position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
 	int selected_id = -1;
+
+	/* make title and center it at screen top */
+	title = ui_render_text (ui, &color_black, "PSP Drone Control");
+	title_position.x = (screen->w - title->w) / 2;
+	title_position.y = 20;
 
 	main_menu = menu_new (font, 0);
 	connect_button = menu_button_entry_new (MAIN_MENU_CONNECT,
@@ -870,6 +877,7 @@ ui_main_menu_run (UI * ui)
 				/* update screen */
 				SDL_FillRect (ui->screen, NULL,
 						SDL_MapRGB (ui->screen->format, 28, 142, 207));
+				SDL_BlitSurface (title, NULL, screen, &title_position);
 				SDL_BlitSurface (frame, NULL, screen, &menu_frame);
 				menu_render_to (main_menu, screen, &position);
 				sceDisplayWaitVblankStart ();
