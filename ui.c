@@ -375,8 +375,9 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
+	MenuState ret;
 
-	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START | MENU_BACK_ON_CIRCLE);
 
 	/* hull presence selection */
 	hull_switch = menu_switch_entry_new (PILOTING_SETTINGS_MENU_HULL,
@@ -475,7 +476,8 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 		/*redraw flight ui */
 		ui_flight_update(ui, drone);
 
-		switch (menu_update (menu)) {
+		ret = menu_update (menu);
+		switch (ret) {
 			case MENU_STATE_VISIBLE:
 				/* sync option with drone */
 				menu_switch_entry_set_active (hull_switch,
@@ -518,7 +520,7 @@ done:
 			menu_scale_entry_get_value (tilt_limit_scale));
 
 	menu_free (menu);
-	return 0;
+	return ret;
 }
 
 static int
@@ -532,8 +534,9 @@ ui_controls_settings_menu (UI * ui, Drone * drone)
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
+	MenuState ret;
 
-	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START | MENU_BACK_ON_CIRCLE);
 
 	yaw_scale = menu_scale_entry_new (CONTROLS_SETTINGS_YAW, "yaw", 0, 100);
 	menu_scale_entry_set_value (yaw_scale, ui->setting_yaw);
@@ -572,7 +575,8 @@ ui_controls_settings_menu (UI * ui, Drone * drone)
 		/*redraw flight ui */
 		ui_flight_update(ui, drone);
 
-		switch (menu_update (menu)) {
+		ret = menu_update (menu);
+		switch (ret) {
 			case MENU_STATE_VISIBLE:
 				SDL_BlitSurface (frame, NULL, ui->screen,
 						&menu_frame);
@@ -598,7 +602,7 @@ done:
 	ui->setting_gaz = menu_scale_entry_get_value (gaz_scale);
 
 	menu_free (menu);
-	return 0;
+	return ret;
 }
 
 static int
@@ -612,8 +616,9 @@ ui_drone_info_menu (UI * ui, Drone * drone)
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
+	MenuState ret;
 
-	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START | MENU_BACK_ON_CIRCLE);
 
 	snprintf (tmp, 127, "Drone HW: %s", drone->hardware_version);
 	drone_hw = menu_label_entry_new (DRONE_INFO_MENU_DRONE_HW, tmp);
@@ -647,7 +652,8 @@ ui_drone_info_menu (UI * ui, Drone * drone)
 		/*redraw flight ui */
 		ui_flight_update(ui, drone);
 
-		switch (menu_update (menu)) {
+		ret = menu_update (menu);
+		switch (ret) {
 			case MENU_STATE_VISIBLE:
 				SDL_BlitSurface (frame, NULL, ui->screen,
 						&menu_frame);
@@ -666,7 +672,7 @@ ui_drone_info_menu (UI * ui, Drone * drone)
 
 done:
 	menu_free (menu);
-	return 0;
+	return ret;
 }
 
 static int
@@ -682,6 +688,7 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
 	int selected_id = -1;
+	MenuState submenu_state;
 
 	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
 
@@ -718,7 +725,9 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 	SDL_FillRect (frame, NULL, SDL_MapRGB (frame->format, 0, 0, 0));
 	SDL_SetAlpha (frame, SDL_SRCALPHA, 200);
 
+mm_display:
 	while (running) {
+		selected_id = -1;
 		/*redraw flight ui */
 		ui_flight_update(ui, drone);
 
@@ -745,24 +754,28 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 done:
 	switch (selected_id) {
 		case FLIGHT_MAIN_MENU_FLAT_TRIM:
-			drone_flat_trim (drone);
+			submenu_state = drone_flat_trim (drone);
 			break;
 
 		case FLIGHT_MAIN_MENU_PILOTING_SETTINGS:
-			ui_piloting_settings_menu (ui, drone);
+			submenu_state = ui_piloting_settings_menu (ui, drone);
 			break;
 
 		case FLIGHT_MAIN_MENU_CONTROLS_SETTINGS:
-			ui_controls_settings_menu (ui, drone);
+			submenu_state = ui_controls_settings_menu (ui, drone);
 			break;
 
 		case FLIGHT_MAIN_MENU_DRONE_INFO:
-			ui_drone_info_menu (ui, drone);
+			submenu_state = ui_drone_info_menu (ui, drone);
 			break;
 
 		default:
+			submenu_state = MENU_STATE_CANCELLED;
 			break;
 	}
+
+	if (submenu_state == MENU_STATE_CLOSE)
+		goto mm_display;
 
 	menu_free (menu);
 	return selected_id;
