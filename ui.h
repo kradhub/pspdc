@@ -56,6 +56,7 @@ struct _ui
 	int setting_pitch;
 	int setting_roll;
 	int setting_gaz;
+	int setting_select_binding;
 };
 
 int ui_init (UI * ui, int width, int height);

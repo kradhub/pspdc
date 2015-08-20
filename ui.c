@@ -70,6 +70,16 @@ enum
 	CONTROLS_SETTINGS_PITCH,
 	CONTROLS_SETTINGS_ROLL,
 	CONTROLS_SETTINGS_GAZ,
+	CONTROLS_SETTINGS_SELECT_BINDING,
+};
+
+enum
+{
+	SELECT_BIND_TAKE_PICTURE,
+	SELECT_BIND_FLIP_FRONT,
+	SELECT_BIND_FLIP_BACK,
+	SELECT_BIND_FLIP_RIGHT,
+	SELECT_BIND_FLIP_LEFT,
 };
 
 enum
@@ -531,6 +541,7 @@ ui_controls_settings_menu (UI * ui, Drone * drone)
 	MenuScaleEntry *pitch_scale;
 	MenuScaleEntry *roll_scale;
 	MenuScaleEntry *gaz_scale;
+	MenuComboBoxEntry *select_binding;
 	SDL_Rect position;
 	SDL_Surface *frame;
 	SDL_Rect menu_frame;
@@ -552,10 +563,27 @@ ui_controls_settings_menu (UI * ui, Drone * drone)
 	gaz_scale = menu_scale_entry_new (CONTROLS_SETTINGS_GAZ, "gaz", 0, 100);
 	menu_scale_entry_set_value (gaz_scale, ui->setting_gaz);
 
+	select_binding =
+		menu_combo_box_entry_new (CONTROLS_SETTINGS_SELECT_BINDING,
+				"select binding");
+	menu_combo_box_entry_append (select_binding, SELECT_BIND_TAKE_PICTURE,
+			"take picture");
+	menu_combo_box_entry_append (select_binding, SELECT_BIND_FLIP_FRONT,
+			"front flip");
+	menu_combo_box_entry_append (select_binding, SELECT_BIND_FLIP_BACK,
+			"back flip");
+	menu_combo_box_entry_append (select_binding, SELECT_BIND_FLIP_LEFT,
+			"left flip");
+	menu_combo_box_entry_append (select_binding, SELECT_BIND_FLIP_RIGHT,
+			"right flip");
+	menu_combo_box_entry_set_value (select_binding,
+			ui->setting_select_binding);
+
 	menu_add_entry (menu, (MenuEntry *) yaw_scale);
 	menu_add_entry (menu, (MenuEntry *) pitch_scale);
 	menu_add_entry (menu, (MenuEntry *) roll_scale);
 	menu_add_entry (menu, (MenuEntry *) gaz_scale);
+	menu_add_entry (menu, (MenuEntry *) select_binding);
 
 	/* center position in screen */
 	position.x = (ui->screen->w - menu_get_width (menu)) / 2;
@@ -600,6 +628,8 @@ done:
 	ui->setting_pitch = menu_scale_entry_get_value (pitch_scale);
 	ui->setting_roll = menu_scale_entry_get_value (roll_scale);
 	ui->setting_gaz = menu_scale_entry_get_value (gaz_scale);
+	ui->setting_select_binding =
+		menu_combo_box_entry_get_value (select_binding);
 
 	menu_free (menu);
 	return ret;
@@ -806,6 +836,7 @@ ui_init (UI * ui, int width, int height)
 	ui->setting_pitch = 50;
 	ui->setting_roll = 50;
 	ui->setting_gaz = 75;
+	ui->setting_select_binding = SELECT_BIND_TAKE_PICTURE;
 
 	return 0;
 
@@ -1004,8 +1035,27 @@ ui_flight_run (UI * ui, Drone * drone)
 			is_flying = 0;
 		}
 
-		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_SELECT))
-			drone_do_flip (drone, DRONE_FLIP_FRONT);
+		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_SELECT)) {
+			switch (ui->setting_select_binding) {
+				case SELECT_BIND_TAKE_PICTURE:
+					drone_take_picture (drone);
+					break;
+				case SELECT_BIND_FLIP_FRONT:
+					drone_do_flip (drone, DRONE_FLIP_FRONT);
+					break;
+				case SELECT_BIND_FLIP_BACK:
+					drone_do_flip (drone, DRONE_FLIP_BACK);
+					break;
+				case SELECT_BIND_FLIP_RIGHT:
+					drone_do_flip (drone, DRONE_FLIP_RIGHT);
+					break;
+				case SELECT_BIND_FLIP_LEFT:
+					drone_do_flip (drone, DRONE_FLIP_LEFT);
+					break;
+				default:
+					break;
+			}
+		}
 
 		if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_START)) {
 			if (ui_flight_main_menu (ui, drone) ==
