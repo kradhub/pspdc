@@ -96,6 +96,24 @@ struct _MenuScaleEntry
 	MenuScaleEntryValueChangedCallback value_changed;
 };
 
+typedef struct _ComboBoxItem ComboBoxItem;
+
+struct _ComboBoxItem
+{
+	int id;
+	char *label;
+	ComboBoxItem *prev;
+	ComboBoxItem *next;
+};
+
+struct _MenuComboBoxEntry
+{
+	MenuEntry parent;
+
+	ComboBoxItem *items;
+	ComboBoxItem *current;
+};
+
 struct _Menu
 {
 	TTF_Font *font;
@@ -355,6 +373,17 @@ menu_update (Menu * menu)
 
 			break;
 		}
+
+		case MENU_ENTRY_TYPE_COMBOBOX:
+			if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_LEFT))
+				menu_combo_box_entry_prev ((MenuComboBoxEntry *) entry);
+			else if (EVENT_BUTTON_DOWN (&latch, PSP_CTRL_RIGHT))
+				menu_combo_box_entry_next ((MenuComboBoxEntry *) entry);
+
+			menu_entry_render (entry, menu->font,
+					&menu->selected_color);
+			break;
+
 
 		case MENU_ENTRY_TYPE_LABEL:
 		default:
@@ -797,4 +826,142 @@ menu_scale_entry_set_value_changed_callback (MenuScaleEntry * entry,
 {
 	entry->value_changed = callback;
 	entry->userdata = userdata;
+}
+
+/**
+ * MenuComboBoxEntry API implementation
+ */
+static void
+combo_box_item_free (ComboBoxItem * item)
+{
+	free (item->label);
+	free (item);
+}
+
+static void
+menu_combo_box_entry_free (MenuEntry * entry)
+{
+	MenuComboBoxEntry *combo_entry = (MenuComboBoxEntry *) entry;
+	ComboBoxItem *item;
+
+	item = combo_entry->items;
+	while (item != NULL) {
+		ComboBoxItem *tmp = item->next;
+		combo_box_item_free (item);
+		item = tmp;
+	}
+}
+
+static int
+menu_combo_box_entry_render (MenuEntry * entry, TTF_Font * font,
+		const SDL_Color * color)
+{
+	MenuComboBoxEntry *combo_entry = (MenuComboBoxEntry *) entry;
+	ComboBoxItem *item = combo_entry->current;
+	SDL_Surface *surface;
+	char *text;
+	int len = 255;
+	int ret = -1;
+
+	text = malloc (len * sizeof(char));
+	snprintf (text, len, "%s : <- %s ->", entry->title,
+			item != NULL ? item->label : "(null)");
+
+	surface = TTF_RenderText_Blended (font, text, *color);
+	if (!surface) {
+		PSPLOG_ERROR ("failed to render combo box, reason: %s",
+				TTF_GetError ());
+		goto done;
+	}
+
+	menu_surface_replace_helper (&entry->surface, surface);
+	ret = 0;
+
+done:
+	free (text);
+	return ret;
+}
+
+MenuComboBoxEntry *
+menu_combo_box_entry_new (int id, const char *title)
+{
+	MenuComboBoxEntry *entry;
+
+	entry = malloc (sizeof (MenuComboBoxEntry));
+
+	menu_entry_init (&entry->parent, MENU_ENTRY_TYPE_COMBOBOX, id, title,
+			menu_combo_box_entry_free);
+
+	entry->items = NULL;
+	entry->current = NULL;
+
+	entry->parent.render = menu_combo_box_entry_render;
+
+	return entry;
+}
+
+int
+menu_combo_box_entry_get_value (MenuComboBoxEntry * entry)
+{
+	if (entry->current)
+		return entry->current->id;
+	else
+		return -1;
+}
+
+int
+menu_combo_box_entry_set_value (MenuComboBoxEntry * entry, int id)
+{
+	ComboBoxItem *item = entry->items;
+
+	while (item) {
+		if (item->id == id) {
+			entry->current = item;
+			return 0;
+		}
+		item = item->next;
+	}
+
+	return -1;
+}
+
+int
+menu_combo_box_entry_append (MenuComboBoxEntry * entry, int id,
+		const char * label)
+{
+	ComboBoxItem *item;
+	ComboBoxItem *cur = entry->items;
+
+	item = malloc (sizeof (*item));
+	item->id = id;
+	item->label = strdup (label);
+	item->prev = item->next = NULL;
+
+	if (cur == NULL) {
+		/* no item in combo yet */
+		entry->items = item;
+		entry->current = item;
+		return 0;
+	}
+
+	while (cur->next != NULL)
+		cur = cur->next;
+
+	cur->next = item;
+	item->prev = cur;
+	return 0;
+}
+
+void
+menu_combo_box_entry_next (MenuComboBoxEntry * entry)
+{
+	if (entry->current && entry->current->next)
+		entry->current = entry->current->next;
+}
+
+void
+menu_combo_box_entry_prev (MenuComboBoxEntry * entry)
+{
+	if (entry->current && entry->current->prev)
+		entry->current = entry->current->prev;
 }
