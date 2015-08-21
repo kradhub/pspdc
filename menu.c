@@ -168,22 +168,6 @@ menu_refresh_all_entries (Menu * menu)
 	}
 }
 
-static MenuEntry *
-menu_get_entry_by_id (Menu * menu, int id)
-{
-	MenuEntry *res = NULL;
-	MenuEntry *e;
-
-	for (e = menu->head; e != NULL; e = e->next) {
-		if (e->id == id) {
-			res = e;
-			break;
-		}
-	}
-
-	return res;
-}
-
 static int
 menu_select_entry_helper (Menu * menu, MenuEntry * entry)
 {
@@ -477,7 +461,7 @@ menu_add_entry (Menu * menu, MenuEntry * entry)
 	if (menu_entry_render (entry, menu->font, color) < 0)
 		goto render_failed;
 
-	if (entry->surface->w > menu->width)
+	if (((unsigned int) entry->surface->w) > menu->width)
 		menu->width = entry->surface->w;
 
 	menu->height += entry->surface->h;
