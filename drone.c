@@ -230,7 +230,7 @@ _on_send_json (uint8_t *data, uint32_t *size, void * userdata)
 			ARDISCOVERY_CONNECTION_JSON_D2CPORT_KEY, drone->d2c_port,
 			ARDISCOVERY_CONNECTION_JSON_CONTROLLER_NAME_KEY, "psp",
 			ARDISCOVERY_CONNECTION_JSON_CONTROLLER_TYPE_KEY, "psp");
-	*size++;
+	(*size)++;
 
 	return ARDISCOVERY_OK;
 }
