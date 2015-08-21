@@ -258,6 +258,26 @@ on_battery_status_changed (uint8_t percent, void * userdata)
 }
 
 static void
+on_all_states_sync (void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got all states");
+
+	drone->state_sync = 1;
+}
+
+static void
+on_all_settings_sync (void * userdata)
+{
+	Drone *drone = (Drone *) userdata;
+
+	PSPLOG_INFO ("got all settings");
+
+	drone->settings_sync = 1;
+}
+
+static void
 on_flying_state_changed (eARCOMMANDS_ARDRONE3_PILOTINGSTATE_FLYINGSTATECHANGED_STATE state,
 		void *userdata)
 {
@@ -548,6 +568,10 @@ drone_init (Drone * drone)
 			on_arcommand_version, drone);
 	ARCOMMANDS_Decoder_SetCommonCommonStateBatteryStateChangedCallback (
 			on_battery_status_changed, drone);
+	ARCOMMANDS_Decoder_SetCommonCommonStateAllStatesChangedCallback (
+			on_all_states_sync, drone);
+	ARCOMMANDS_Decoder_SetCommonSettingsStateAllSettingsChangedCallback (
+			on_all_settings_sync, drone);
 
 	/* piloting */
 	ARCOMMANDS_Decoder_SetARDrone3PilotingStateFlyingStateChangedCallback (

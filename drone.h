@@ -76,6 +76,8 @@ struct _drone
 	ARSAL_Thread_t navdata_thread;
 
 	int running;
+	int state_sync;
+	int settings_sync;
 
 	/* drone state */
 	DroneState state;
