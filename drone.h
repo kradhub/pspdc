@@ -130,6 +130,7 @@ int drone_altitude_limit_set (Drone * drone, int limit);
 int drone_vertical_speed_limit_set (Drone * drone, int limit);
 int drone_rotation_speed_limit_set (Drone * drone, int limit);
 int drone_max_tilt_set (Drone * drone, int limit);
+int drone_streaming_set_active (Drone * drone, int active);
 
 int drone_take_picture (Drone * drone);
 

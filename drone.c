@@ -453,6 +453,30 @@ on_setting_max_tilt_changed (float current, float min, float max,
 	drone->tilt_limit.max = max;
 }
 
+static void
+on_streaming_enabled (eARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED state,
+		void * userdata)
+{
+	const char *str;
+
+	switch (state) {
+		case ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ENABLED:
+			str = "enabled";
+			break;
+		case ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_DISABLED:
+			str = "disabled";
+			break;
+		case ARCOMMANDS_ARDRONE3_MEDIASTREAMINGSTATE_VIDEOENABLECHANGED_ENABLED_ERROR:
+			str = "error";
+			break;
+		default:
+			str = "unknown";
+			break;
+	}
+
+	PSPLOG_INFO ("video streaming state: %s", str);
+}
+
 static int
 drone_discover (Drone * drone)
 {
@@ -602,6 +626,10 @@ drone_init (Drone * drone)
 	/* GPS callback */
 	ARCOMMANDS_Decoder_SetARDrone3GPSSettingsStateGPSFixStateChangedCallback (
 			on_gps_fixed_changed, drone);
+
+	/* Media */
+	ARCOMMANDS_Decoder_SetARDrone3MediaStreamingStateVideoEnableChangedCallback (
+			on_streaming_enabled, drone);
 
 	return 0;
 }
@@ -1170,6 +1198,27 @@ drone_max_tilt_set (Drone * drone, int limit)
 	}
 
 	PSPLOG_DEBUG ("send max tilt (%d) command", limit);
+	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
+			cmd, len, NULL, &ar_network_command_cb, 1);
+
+	return 0;
+}
+
+int
+drone_streaming_set_active (Drone * drone, int active)
+{
+	eARCOMMANDS_GENERATOR_ERROR err;
+	uint8_t cmd[COMMAND_BUFFER_SIZE];
+	int32_t len;
+
+	err = ARCOMMANDS_Generator_GenerateARDrone3MediaStreamingVideoEnable (
+			cmd, COMMAND_BUFFER_SIZE, &len, active);
+	if (err != ARCOMMANDS_GENERATOR_OK) {
+		PSPLOG_ERROR ("failed to generate streaming active command");
+		return -1;
+	}
+
+	PSPLOG_INFO ("send streaming set active: %d", active);
 	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, len, NULL, &ar_network_command_cb, 1);
 

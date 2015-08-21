@@ -220,6 +220,12 @@ main_menu:
 			DRONE_C2D_PORT, DRONE_D2C_PORT);
 
 	drone_sync_state (&drone);
+
+	/* disable streaming after sync state because sync state command
+	 * seems to enable streaming, and maybe other things. It may likely
+	 * be a connection initializer for drone.
+	 * FIXME: we may wait to sync state end event before continuing. */
+	drone_streaming_set_active (&drone, 0);
 	drone_sync_settings (&drone);
 
 	ret = ui_flight_run (&ui, &drone);
