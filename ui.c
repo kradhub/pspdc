@@ -334,7 +334,7 @@ static void
 on_hull_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active (entry);
+	unsigned int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->hull)
 		drone_hull_set_active (drone, value);
@@ -344,7 +344,7 @@ static void
 on_outdoor_flight_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active (entry);
+	unsigned int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->outdoor)
 		drone_outdoor_flight_set_active (drone, value);
@@ -354,7 +354,7 @@ static void
 on_autotakeoff_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active (entry);
+	unsigned int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->autotakeoff)
 		drone_autotakeoff_set_active (drone, value);
@@ -364,7 +364,7 @@ static void
 on_absolute_control_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
-	int value = menu_switch_entry_get_active (entry);
+	unsigned int value = menu_switch_entry_get_active (entry);
 
 	if (value != drone->abs_control)
 		drone_absolute_control_set_active (drone, value);
