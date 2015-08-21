@@ -140,7 +140,7 @@ struct _Menu
 
 	/* used to filter controller */
 	unsigned int last_ts;
-	int threshold;
+	unsigned int threshold;
 };
 
 static int menu_entry_render (MenuEntry * entry, TTF_Font * font,
@@ -215,19 +215,18 @@ menu_repeat_button_reset (Menu * menu, const SceCtrlData * pad)
 static int
 menu_is_button_repeated (Menu * menu, const SceCtrlData * pad, int ctrl)
 {
-	int ret = 1;
+	unsigned int diff = (pad->TimeStamp - menu->last_ts);
 
-	ret = ret && (pad->Buttons & ctrl);
-	ret = ret && ((pad->TimeStamp - menu->last_ts) > menu->threshold);
-
-	if (ret) {
+	if ((pad->Buttons & ctrl) && (diff > menu->threshold)) {
 		menu->last_ts = pad->TimeStamp;
-		menu->threshold -= 200 * 1000; /* 200 ms */
-		if (menu->threshold < 100 * 1000)
-			menu->threshold = 100 * 1000;
+
+		if (menu->threshold > 200 * 1000)
+			menu->threshold -= 200 * 1000; /* 200 ms */
+
+		return 1;
 	}
 
-	return ret;
+	return 0;
 }
 
 /*
