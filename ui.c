@@ -56,7 +56,6 @@ enum
 {
 	PILOTING_SETTINGS_MENU_HULL = 0,
 	PILOTING_SETTINGS_MENU_OUTDOOR_FLIGHT,
-	PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
 	PILOTING_SETTINGS_MENU_ABSOLUTE_CONTROL,
 	PILOTING_SETTINGS_MENU_ALTITUDE_LIMIT,
 	PILOTING_SETTINGS_MENU_VERTICAL_SPEED_LIMIT,
@@ -351,16 +350,6 @@ on_outdoor_flight_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 }
 
 static void
-on_autotakeoff_switch_toggle (MenuSwitchEntry * entry, void * userdata)
-{
-	Drone *drone = (Drone *) userdata;
-	unsigned int value = menu_switch_entry_get_active (entry);
-
-	if (value != drone->autotakeoff)
-		drone_autotakeoff_set_active (drone, value);
-}
-
-static void
 on_absolute_control_switch_toggle (MenuSwitchEntry * entry, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
@@ -376,7 +365,6 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	Menu *menu;
 	MenuSwitchEntry *hull_switch;
 	MenuSwitchEntry *outdoor_flight_switch;
-	MenuSwitchEntry *autotakeoff_switch;
 	MenuSwitchEntry *absolute_control_switch;
 	MenuScaleEntry *altitude_limit_scale;
 	MenuScaleEntry *vertical_limit_scale;
@@ -405,15 +393,6 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 	menu_switch_entry_set_active (outdoor_flight_switch, drone->outdoor);
 	menu_switch_entry_set_toggled_callback (outdoor_flight_switch,
 			on_outdoor_flight_switch_toggle, drone);
-
-	/* autotakeoff mode */
-	autotakeoff_switch =
-		menu_switch_entry_new (PILOTING_SETTINGS_MENU_AUTOTAKEOFF,
-				"Auto takeoff");
-	menu_switch_entry_set_values_labels (autotakeoff_switch, "no", "yes");
-	menu_switch_entry_set_active (autotakeoff_switch, drone->autotakeoff);
-	menu_switch_entry_set_toggled_callback (autotakeoff_switch,
-			on_autotakeoff_switch_toggle, drone);
 
 	/* absolute control mode */
 	absolute_control_switch =
@@ -461,7 +440,6 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 
 	menu_add_entry (menu, (MenuEntry *) hull_switch);
 	menu_add_entry (menu, (MenuEntry *) outdoor_flight_switch);
-	menu_add_entry (menu, (MenuEntry *) autotakeoff_switch);
 	menu_add_entry (menu, (MenuEntry *) absolute_control_switch);
 	menu_add_entry (menu, (MenuEntry *) altitude_limit_scale);
 	menu_add_entry (menu, (MenuEntry *) vertical_limit_scale);
@@ -494,8 +472,6 @@ ui_piloting_settings_menu (UI * ui, Drone * drone)
 						drone->hull);
 				menu_switch_entry_set_active (outdoor_flight_switch,
 						drone->outdoor);
-				menu_switch_entry_set_active (autotakeoff_switch,
-						drone->autotakeoff);
 				menu_switch_entry_set_active (absolute_control_switch,
 						drone->abs_control);
 

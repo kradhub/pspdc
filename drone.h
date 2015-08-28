@@ -85,7 +85,6 @@ struct _drone
 	unsigned int hull;
 	int altitude;
 	unsigned int outdoor;
-	unsigned int autotakeoff;
 	unsigned int abs_control;
 	unsigned int gps_fixed;
 	double gps_latitude;
@@ -124,7 +123,6 @@ int drone_do_flip (Drone * drone, DroneFlip flip);
 int drone_sync_settings (Drone * drone);
 int drone_hull_set_active (Drone * drone, int active);
 int drone_outdoor_flight_set_active (Drone * drone, int active);
-int drone_autotakeoff_set_active (Drone * drone, int active);
 int drone_absolute_control_set_active (Drone * drone, int active);
 int drone_altitude_limit_set (Drone * drone, int limit);
 int drone_vertical_speed_limit_set (Drone * drone, int limit);
