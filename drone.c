@@ -335,14 +335,6 @@ on_outdoor_flight_changed (uint8_t active, void * userdata)
 }
 
 static void
-on_absolute_control_changed (uint8_t active, void * userdata)
-{
-	Drone *drone = (Drone *) userdata;
-
-	drone->abs_control = active;
-}
-
-static void
 on_gps_fixed_changed (uint8_t gps_fixed, void * userdata)
 {
 	Drone *drone = (Drone *) userdata;
@@ -602,8 +594,6 @@ drone_init (Drone * drone)
 			on_hull_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateOutdoorChangedCallback (
 			on_outdoor_flight_changed, drone);
-	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateAbsolutControlChangedCallback (
-			on_absolute_control_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3PilotingSettingsStateMaxAltitudeChangedCallback (
 			on_setting_altitude_limit_changed, drone);
 	ARCOMMANDS_Decoder_SetARDrone3SpeedSettingsStateMaxVerticalSpeedChangedCallback (
@@ -997,27 +987,6 @@ drone_outdoor_flight_set_active (Drone * drone, int active)
 	}
 
 	PSPLOG_DEBUG ("send outdoor presence: %d", active);
-	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
-			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
-
-	return 0;
-}
-
-int
-drone_absolute_control_set_active (Drone * drone, int active)
-{
-	eARCOMMANDS_GENERATOR_ERROR cmd_error;
-	uint8_t cmd[COMMAND_BUFFER_SIZE];
-	int32_t cmd_size;
-
-	cmd_error = ARCOMMANDS_Generator_GenerateARDrone3PilotingSettingsAbsolutControl (
-			cmd, COMMAND_BUFFER_SIZE, &cmd_size, active);
-	if (cmd_error != ARCOMMANDS_GENERATOR_OK) {
-		PSPLOG_ERROR ("failed to generate absolute control command");
-		return -1;
-	}
-
-	PSPLOG_DEBUG ("send absolute control: %d", active);
 	ARNETWORK_Manager_SendData (drone->net, DRONE_COMMAND_ACK_ID,
 			cmd, cmd_size, NULL, &ar_network_command_cb, 1);
 
