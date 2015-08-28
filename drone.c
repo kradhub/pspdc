@@ -555,6 +555,47 @@ drone_set_datetime (Drone * drone, time_t time)
 	return 0;
 }
 
+static void
+drone_reset (Drone * drone)
+{
+	if (drone->ipv4_addr)
+		free (drone->ipv4_addr);
+
+	drone->ipv4_addr = NULL;
+
+	drone->state_sync = 0;
+	drone->settings_sync = 0;
+	drone->state = DRONE_STATE_LANDED;
+	drone->battery = 0;
+	drone->hull = 0;
+	drone->altitude = 0;
+	drone->outdoor = 0;
+	drone->gps_fixed = 0;
+	drone->gps_latitude = 0.0;
+	drone->gps_longitude = 0.0;
+	drone->gps_altitude = 0.0;
+
+	if (drone->software_version)
+		free (drone->software_version);
+
+	if (drone->hardware_version)
+		free (drone->hardware_version);
+
+	if (drone->arcommand_version)
+		free (drone->arcommand_version);
+
+	drone->software_version = NULL;
+	drone->hardware_version = NULL;
+	drone->arcommand_version = NULL;
+
+	memset (&drone->altitude_limit, 0, sizeof (drone->altitude_limit));
+	memset (&drone->vertical_speed_limit, 0,
+			sizeof (drone->vertical_speed_limit));
+	memset (&drone->rotation_speed_limit, 0,
+			sizeof (drone->rotation_speed_limit));
+	memset (&drone->tilt_limit, 0, sizeof (drone->tilt_limit));
+}
+
 
 /* Drone API */
 int
@@ -795,10 +836,7 @@ drone_disconnect (Drone * drone)
 		ARNETWORKAL_Manager_CloseWifiNetwork (drone->net_al);
 	}
 
-	if (drone->ipv4_addr)
-		free (drone->ipv4_addr);
-
-	drone->ipv4_addr = NULL;
+	drone_reset (drone);
 
 	return 0;
 }
