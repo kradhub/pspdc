@@ -65,6 +65,7 @@ struct _drone
 	int discovery_port;
 	int d2c_port;
 	int c2d_port;
+	int connected;
 
 	ARNETWORKAL_Manager_t *net_al;
 	ARNETWORK_Manager_t *net;

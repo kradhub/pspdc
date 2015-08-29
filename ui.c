@@ -1045,6 +1045,12 @@ ui_flight_run (UI * ui, Drone * drone)
 		int roll = 0;
 		int gaz = 0;
 
+		if (!drone->connected) {
+			ui_msg_dialog (ui, "Connection to drone lost");
+			ret = FLIGHT_UI_MAIN_MENU;
+			break;
+		}
+
 		ui_flight_update (ui, drone);
 
 		sceCtrlReadBufferPositive (&pad, 1);

@@ -502,7 +502,11 @@ static void
 _on_network_disconnected (ARNETWORK_Manager_t * net,
 		ARNETWORKAL_Manager_t * net_al, void * userdata)
 {
+	Drone *drone = (Drone *) userdata;
+
 	PSPLOG_INFO ("on_network_disconnected called");
+
+	drone->connected = 0;
 }
 
 static int
@@ -562,6 +566,8 @@ drone_reset (Drone * drone)
 		free (drone->ipv4_addr);
 
 	drone->ipv4_addr = NULL;
+
+	drone->connected = 0;
 
 	drone->state_sync = 0;
 	drone->settings_sync = 0;
@@ -736,6 +742,7 @@ drone_connect (Drone * drone, const char * ipv4, int discovery_port,
 		goto create_thread_failed;
 
 	PSPLOG_INFO ("connected to drone %s", drone->ipv4_addr);
+	drone->connected = 1;
 
 	drone_set_datetime (drone, time (NULL));
 
