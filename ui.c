@@ -884,6 +884,7 @@ ui_network_dialog_run (UI * ui)
 	pspUtilityNetconfData conf;
 	struct pspUtilityNetconfAdhoc adhoc_params;
 	unsigned int swap_count = 0;
+	SceCtrlLatch latch;
 
 	memset(&conf, 0, sizeof (conf));
 	memset(&adhoc_params, 0, sizeof (adhoc_params));
@@ -948,6 +949,11 @@ ui_network_dialog_run (UI * ui)
 	 */
 	if (swap_count & 1)
 		sceGuSwapBuffers ();
+
+	/* message dialog seems to causes strange latch behavior, next read
+	 * of latch will contains all button pressed during dialog.
+	 * read one to reset it */
+	sceCtrlReadLatch (&latch);
 
 	return conf.base.result;
 }
