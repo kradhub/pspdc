@@ -4,8 +4,8 @@ PSPBIN = $(PSPSDK)/../bin
 TARGET = pspdc
 OBJS = main.o psplog.o drone.o menu.o color.o ui.o
 
-CFLAGS = -g -O2 -G0 -Wall -Wextra
-CXXFLAGS = -g -O2 -Wall -Wextra -fno-exceptions -fno-rtti
+CFLAGS = -g -O2 -G0 -Wall -Wextra -Wno-unused-parameter
+CXXFLAGS = -g -O2 -Wall -Wextra -fno-exceptions -fno-rtti -Wno-unused-parameter
 
 LIBS := \
 	-larcommands \
