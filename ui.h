@@ -64,6 +64,7 @@ void ui_deinit (UI * ui);
 
 int ui_main_menu_run (UI * ui);
 int ui_network_dialog_run (UI * ui);
+void ui_msg_dialog (UI * ui, const char * msg);
 int ui_flight_run (UI * ui, Drone * drone);
 
 #endif

@@ -952,6 +952,79 @@ ui_network_dialog_run (UI * ui)
 	return conf.base.result;
 }
 
+void
+ui_msg_dialog (UI * ui, const char * msg)
+{
+	pspUtilityMsgDialogParams params;
+	unsigned int swap_count = 0;
+	SceCtrlLatch latch;
+
+	memset (&params, 0, sizeof (params));
+
+	params.base.size = sizeof (params);
+	params.base.language = PSP_SYSTEMPARAM_LANGUAGE_ENGLISH;
+	params.base.buttonSwap = PSP_UTILITY_ACCEPT_CROSS;
+
+	/* Thread priorities */
+	params.base.graphicsThread = 17;
+	params.base.accessThread = 19;
+	params.base.fontThread = 18;
+	params.base.soundThread = 16;
+
+	params.mode = PSP_UTILITY_MSGDIALOG_MODE_TEXT;
+	params.options = PSP_UTILITY_MSGDIALOG_OPTION_TEXT;
+	snprintf (params.message, 512, msg);
+
+	sceUtilityMsgDialogInitStart (&params);
+
+	while (running) {
+		int done = 0;
+
+		/* directly use GU to avoid flickering with SDL */
+		sceGuStart (GU_DIRECT, list);
+		sceGuClearColor (0xff554433);
+		sceGuClearDepth (0);
+		sceGuClear (GU_COLOR_BUFFER_BIT|GU_DEPTH_BUFFER_BIT);
+		sceGuFinish ();
+		sceGuSync (0,0);
+
+		switch (sceUtilityMsgDialogGetStatus ()) {
+			case PSP_UTILITY_DIALOG_NONE:
+				break;
+			case PSP_UTILITY_DIALOG_VISIBLE:
+				sceUtilityMsgDialogUpdate (1);
+				break;
+			case PSP_UTILITY_DIALOG_QUIT:
+				sceUtilityMsgDialogShutdownStart ();
+				break;
+			case PSP_UTILITY_DIALOG_FINISHED:
+				done = 1;
+				break;
+			default:
+				break;
+		}
+
+		sceDisplayWaitVblankStart ();
+		sceGuSwapBuffers ();
+		swap_count++;
+
+		if (done)
+			break;
+	}
+
+	/* hack for SDL compatibility.
+	 * if it end up on an odd buffer, SDL won't be displayed.
+	 * ie SDL will display in an hidden buffer
+	 */
+	if (swap_count & 1)
+		sceGuSwapBuffers ();
+
+	/* message dialog seems to causes strange latch behavior, next read
+	 * of latch will contains all button pressed during dialog.
+	 * read one to reset it */
+	sceCtrlReadLatch (&latch);
+}
+
 int
 ui_flight_run (UI * ui, Drone * drone)
 {

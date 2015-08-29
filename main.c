@@ -216,8 +216,15 @@ main_menu:
 	PSPLOG_INFO ("connected to %s (%s)", ssid.ssid, gateway.gateway);
 	PSPLOG_INFO ("get ip: %s", ip.ip);
 
-	drone_connect (&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
-			DRONE_C2D_PORT, DRONE_D2C_PORT);
+	if (drone_connect (&drone, gateway.gateway, DRONE_DISCOVERY_PORT,
+			DRONE_C2D_PORT, DRONE_D2C_PORT) < 0) {
+		ui_msg_dialog (&ui, "Failed to connect to drone.\n"
+				"Make sure the access point you selected is "
+				"the right one.\n"
+				"More info could be found in the log file.");
+		sceNetApctlDisconnect ();
+		goto main_menu;
+	}
 
 	drone_sync_state (&drone);
 
