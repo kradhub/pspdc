@@ -1,0 +1,116 @@
+PSP Drone Control
+=================
+
+PSP Drone Control (PSPDC) is a Parrot(tm) Bebop drone remote controller
+software for PSP. Current features are:
+- piloting
+- configuring piloting drone settings
+- flip
+- blind photo record
+
+
+Flight key binding
+------------------
+
+top:           move forward
+down:          move backward
+left:          move left
+right:         move right
+left-trigger:  turn left (yaw)
+right-trigger: turn right (yaw)
+cross:         increase altitude
+square:        decrease altitude
+circle:        emergency
+triangle:      takeoff / landoff
+select:        do flip
+start:         main menu
+
+
+Note about drone settings
+-------------------------
+
+- Flat trim command have no feedback yet, pressing X in its entry in the menu
+send the command to drone. Just wait few seconds before fly.
+- yes/no drone settings are synchronized when their values changed.
+- numerical drone settings are synchronized when menu is closed.
+
+
+Installing
+---------
+
+Copy EBOOT.PBP and DejaVuSans.ttf to 'PSP/GAME/pspdc' directory of the
+PSP memory card.
+DejaVuSans.ttf can be downloaded at: http://dejavu-fonts.org/wiki/Download
+
+Note that you need a PSP which can run unsigned software.
+
+
+Setup drone
+-----------
+
+There is currently an incompatibility between the PSP wifi stack and the
+default Bebop firmware configuration so that the latter should be modified
+in order to have the PSP connect to the drone.
+For this step, you will need a computer with a wifi card and the telnet tool.
+First connect the computer to the drone, you should have an IP like
+192.168.42.2
+When connected, run the following command:
+$ telnet 192.168.42.1
+
+You should see a busybox prompt.
+We will modify the file configuring the Bebop wifi to switch the g-mode to LRS,
+and so remount the root partition read-write.
+$ mount -o remount,rw /
+$ vi /sbin/broadcom_setup.sh
+
+Insert following lines at the end of create_access_point() just before the
+comment: "# Start Wifi"
+bcmwl down
+bcmwl gmode lrs
+bcmwl up
+
+Do the same in create_access_point_for_country().
+
+
+Also makes sure the drone is blocked on the 2.4 GHz band, using official
+application for instance, or by changing the config file on the drone.
+
+You can now restart the drone and connect with your PSP.
+
+Building from source
+--------------------
+
+To build pspdc, you will need the following tools and libraries:
+* autoconf, automake and libtool
+* a psptoolchain. Such toolchain can be build using the following scripts:
+  https://github.com/pspdev/psptoolchain
+
+* the following modified Parrot Bebop SDK:
+  https://github.com/kradhub/libARSAL/tree/dev-build-psp
+  https://github.com/kradhub/libARNetworkAL/tree/dev-psp-build2
+  https://github.com/kradhub/libARNetwork/tree/dev-psp-build2
+  https://github.com/kradhub/libARDiscovery/tree/dev-psp-build-branch
+  https://github.com/kradhub/libARCommands/tree/dev-psp-build2
+
+  See their respective README.PSP to know how to build them.
+
+Then just go to the pspdc directory and run:
+$ export PSPDEV=<path-to-psptoolchain-root>
+$ export PATH=$PSPDEV/bin:$PSPDEV/psp/bin:$PATH
+$ make
+
+As a result of the compilation, you should have the EBOOT.PBP.
+
+
+License
+=======
+
+See COPYING.
+
+
+Disclaimer
+==========
+
+This software is under developement, use it at your own risks. I'm not liable
+for any kind of damage that can happen due to its usage.
+Also, don't forget to take care of people safety when using it with your drone.
