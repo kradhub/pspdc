@@ -736,7 +736,8 @@ mm_display:
 done:
 	switch (selected_id) {
 		case FLIGHT_MAIN_MENU_FLAT_TRIM:
-			submenu_state = drone_flat_trim (drone);
+			drone_flat_trim (drone);
+			submenu_state = MENU_STATE_CLOSE;
 			break;
 
 		case FLIGHT_MAIN_MENU_PILOTING_SETTINGS:
