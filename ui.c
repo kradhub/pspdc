@@ -672,7 +672,7 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 	int selected_id = -1;
 	MenuState submenu_state;
 
-	menu = menu_new (ui->font, MENU_CANCEL_ON_START);
+	menu = menu_new (ui->font, MENU_CANCEL_ON_START | MENU_BACK_ON_CIRCLE);
 
 	quit = menu_button_entry_new (FLIGHT_MAIN_MENU_QUIT,
 			"Return to main menu");
@@ -709,6 +709,8 @@ ui_flight_main_menu (UI * ui, Drone * drone)
 
 mm_display:
 	while (running) {
+		MenuCloseResult res;
+
 		selected_id = -1;
 		/*redraw flight ui */
 		ui_flight_update(ui, drone);
@@ -716,6 +718,10 @@ mm_display:
 		switch (menu_update (menu)) {
 			case MENU_STATE_CLOSE:
 				selected_id = menu_get_selected_id (menu);
+				res = menu_get_close_result (menu);
+
+				if (res == MENU_CLOSE_RESULT_BACK)
+					selected_id = -1;
 				goto done;
 				break;
 
